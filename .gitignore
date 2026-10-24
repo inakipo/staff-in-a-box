@@ -4,3 +4,4 @@ __pycache__/
 .pytest_cache/
 viewer/shots/
 lab/labdata.js
+lab/shots/

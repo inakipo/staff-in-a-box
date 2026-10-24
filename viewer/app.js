@@ -1084,6 +1084,14 @@
   window.renderNow = renderNow;
   window.setReveal = setReveal;
   window.lessonCount = LESSONS.length;
+  // video hooks: where a map point sits on screen (for "look here" rings), and a camera override
+  window.screenOf = function (lat, lon) {
+    var x = toX(lon), z = toZ(lat), v = new THREE.Vector3(x, yAt(x, z), z).project(camera);
+    var sr = stage.getBoundingClientRect();
+    return { x: sr.left + (v.x + 1) / 2 * sr.width, y: sr.top + (1 - v.y) / 2 * sr.height, visible: v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05 };
+  };
+  window.setCamera = function (pr, azOff) { setCam(camFromPreset(typeof pr === 'string' ? PRESETS[pr] : pr, azOff || 0)); };
+  window.lessonIndex = function (id) { for (var i = 0; i < LESSONS.length; i++) if (LESSONS[i].id === id) return i; return -1; };
 
   resize();
   goLesson(0, false);

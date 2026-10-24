@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff in a box: the lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="lab.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand">
+    <div class="b1">Staff in a box: the lab</div>
+    <div class="b2">Deterministic planning, by hand. Predict, build, watch, explain.</div>
+  </div>
+  <div id="progress" class="progress"></div>
+  <div id="pystatus" class="pystatus loading"><i></i><span>Starting Python</span></div>
+</header>
+<div id="shell">
+  <nav id="side">
+    <div class="side-h">Exercises</div>
+    <ol id="exlist"></ol>
+    <div class="side-foot">
+      <p>Everything you type stays in this browser. Nothing is sent anywhere.</p>
+      <p class="kbd-row"><kbd>Cmd</kbd> or <kbd>Ctrl</kbd> + <kbd>Enter</kbd> runs the tests.</p>
+    </div>
+  </nav>
+  <main id="main"></main>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="labdata.js"></script>
+<script src="exercises.js"></script>
+<script src="fusion_py.js"></script>
+<script src="../viewer/data.js" onerror="window.SIB = null"></script>
+<script src="lab.js"></script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planning Engine Explained</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <main id="stage">
+    <canvas id="c"></canvas>
+    <div id="labels"></div>
+    <header id="brand">
+      <div class="b1">Staff in a box</div>
+      <div class="b2">A deterministic planning engine on real terrain, Champagne, France</div>
+    </header>
+    <div id="hud"></div>
+    <div id="compass" title="North">
+      <svg viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="20" r="18" fill="rgba(13,18,24,.7)" stroke="rgba(255,255,255,.18)"/><g id="needle"><path d="M20 6 L25 21 L20 18 L15 21 Z" fill="#f5b25b"/><path d="M20 34 L25 21 L20 24 L15 21 Z" fill="#5d6b7c"/></g></svg>
+      <span>N</span>
+    </div>
+    <div id="legend"></div>
+    <div id="timebar" class="hidden">
+      <button id="play" aria-label="Play or pause"></button>
+      <div class="track"><input id="slider" type="range" min="0" max="1000" value="0"><div id="ticks"></div></div>
+      <div id="tlabel">H+0</div>
+      <button id="reveal" class="toggle hidden">Reveal truth</button>
+    </div>
+  </main>
+  <aside id="panel">
+    <div class="ph">
+      <div id="lnum"></div>
+      <h1 id="ltitle"></h1>
+    </div>
+    <div id="pscroll">
+      <p id="lplain"></p>
+      <div id="lextra"></div>
+      <section class="why">
+        <h3>Why it is this way</h3>
+        <p id="lwhy"></p>
+      </section>
+      <section class="tech open" id="techbox">
+        <button id="techbtn" aria-expanded="true"><span>Technical</span><svg viewBox="0 0 12 12" width="12" height="12"><path d="M2 4 L6 8 L10 4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        <p id="ltech"></p>
+      </section>
+    </div>
+    <nav id="nav">
+      <button id="prev">&larr; Prev</button>
+      <div id="dots"></div>
+      <button id="next">Next &rarr;</button>
+    </nav>
+  </aside>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="data.js"></script>
+<script src="lessons.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

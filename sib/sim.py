@@ -33,7 +33,7 @@ def position(line, t):
     return line[-1][:2]
 
 
-def run(assignment, depart=None, speed=None, blown=(), step=1):
+def run(assignment, depart=None, speed=None, blown=(), step=1, tracks=True):
     """assignment: {blue unit id: task name}. depart: {unit id: minute}. speed: {unit id: factor} for perturbations.
     Returns per-unit tracks [(minute, lat, lon)], arrival minutes and fuel used."""
     s = scenario()
@@ -46,7 +46,7 @@ def run(assignment, depart=None, speed=None, blown=(), step=1):
         kmh = round(u["kmh"] * speed.get(uid, 1.0), 1)
         r = _route(where(s, u["start"]), where(s, target), kmh, tuple(map(tuple, blown)))
         d0 = depart.get(uid, u.get("depart_min", 0))
-        track = [(t, *position(r["line"], t - d0)) for t in range(0, HORIZON + 1, step)]
+        track = [(t, *position(r["line"], t - d0)) for t in range(0, HORIZON + 1, step)] if tracks else []
         out[uid] = {"side": "red" if uid.startswith("R") else "blue", "target": target, "depart": d0,
                     "arrive": d0 + r["min"], "km": r["km"], "fuel_l": round(r["km"] * u.get("l_per_km", 0)),
                     "track": track, "line": r["line"]}

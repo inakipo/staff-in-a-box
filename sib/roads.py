@@ -42,13 +42,29 @@ def nearest(latlon):
     return min(g.nodes, key=lambda n: km(g.nodes[n]["pos"], latlon))
 
 
-def route(a, b, avoid=()):
-    """Fastest route between two (lat, lon) points; avoid = way ids treated as cut (a blown bridge)."""
+def blown_edges(positions, radius_km=0.3):
+    """Every bridge segment within radius of a crossing: both carriageways of a motorway, slip roads, the lot."""
     g = graph()
-    if avoid:
-        g = nx.restricted_view(g, [], [(u, v) for u, v, d in g.edges(data=True) if d["way"] in set(avoid)])
-    path = nx.shortest_path(g, nearest(a), nearest(b), weight="min")
-    edges = [g.edges[u, v] for u, v in zip(path, path[1:])]
-    return {"km": round(sum(e["km"] for e in edges), 1), "min": round(sum(e["min"] for e in edges)),
-            "bridges": sorted({e["way"] for e in edges if e["bridge"]}),
-            "line": [g.nodes[n]["pos"] for n in path]}
+    return [(u, v) for u, v, d in g.edges(data=True) if d["bridge"]
+            and any(km(g.nodes[u]["pos"], p) < radius_km or km(g.nodes[v]["pos"], p) < radius_km for p in positions)]
+
+
+def route(a, b, kmh=None, blown=()):
+    """Fastest route between two (lat, lon) points for a column that cannot exceed kmh; blown = crossing positions
+    whose bridges are cut. Returns km, minutes, and the line with the minute each point is reached."""
+    g = graph()
+    if blown:
+        g = nx.restricted_view(g, [], blown_edges(blown))
+
+    def minutes(u, v, d):
+        return 60 * d["km"] / min(KMH[d["cls"]], kmh or 999)
+
+    path = nx.shortest_path(g, nearest(a), nearest(b), weight=minutes)
+    line, t, dist = [], 0.0, 0.0
+    for n, node in enumerate(path):
+        if n:
+            d = g.edges[path[n - 1], node]
+            t += minutes(path[n - 1], node, d)
+            dist += d["km"]
+        line.append((*g.nodes[node]["pos"], round(t, 2)))
+    return {"km": round(dist, 1), "min": round(t), "line": line}

@@ -2,41 +2,253 @@
   "name": "Exercise AUBE CROSSING (fictional)",
   "note": "Fictional training scenario on real terrain (OpenStreetMap, Aube and Marne valleys). Units, sides and capabilities are generic planning values, not real orders of battle.",
   "start": "2026-11-12T05:00:00+01:00",
-  "area": {"south": 48.35, "west": 3.90, "north": 49.00, "east": 4.70},
+  "area": {
+    "south": 48.35,
+    "west": 3.9,
+    "north": 49.0,
+    "east": 4.7
+  },
   "places": {
-    "camp_mailly":   {"name": "Camp de Mailly (assembly area)", "pos": [48.665, 4.213]},
-    "arcis":         {"name": "Arcis-sur-Aube", "pos": [48.535, 4.141]},
-    "ramerupt":      {"name": "Ramerupt", "pos": [48.515, 4.296]},
-    "brienne":       {"name": "Brienne-le-Château", "pos": [48.393, 4.526]},
-    "vitry":         {"name": "Vitry-le-François", "pos": [48.725, 4.585]},
-    "sommesous":     {"name": "Sommesous", "pos": [48.737, 4.203]},
-    "chalons":       {"name": "Châlons-en-Champagne", "pos": [48.957, 4.363]}
+    "camp_mailly": {
+      "name": "Camp de Mailly (assembly area)",
+      "pos": [
+        48.665,
+        4.213
+      ]
+    },
+    "arcis": {
+      "name": "Arcis-sur-Aube",
+      "pos": [
+        48.535,
+        4.141
+      ]
+    },
+    "ramerupt": {
+      "name": "Ramerupt",
+      "pos": [
+        48.515,
+        4.296
+      ]
+    },
+    "brienne": {
+      "name": "Brienne-le-Château",
+      "pos": [
+        48.393,
+        4.526
+      ]
+    },
+    "vitry": {
+      "name": "Vitry-le-François",
+      "pos": [
+        48.725,
+        4.585
+      ]
+    },
+    "sommesous": {
+      "name": "Sommesous",
+      "pos": [
+        48.737,
+        4.203
+      ]
+    },
+    "chalons": {
+      "name": "Châlons-en-Champagne",
+      "pos": [
+        48.957,
+        4.363
+      ]
+    },
+    "vitry_west": {
+      "name": "Observation post west of Vitry",
+      "pos": [
+        48.7,
+        4.48
+      ]
+    }
   },
   "crossings": {
-    "X1": {"river": "Aube", "road": "D 677", "osm_way": 202546456, "pos": [48.5383, 4.142],  "town": "Arcis-sur-Aube"},
-    "X2": {"river": "Aube", "road": "D 10",  "osm_way": 202546457, "pos": [48.5359, 4.1283], "town": "Arcis-sur-Aube"},
-    "X3": {"river": "Aube", "road": "A 26",  "osm_way": 157329661, "pos": [48.5437, 4.1885], "town": "Arcis-sur-Aube"},
-    "X4": {"river": "Aube", "road": "D 99",  "osm_way": 220738457, "pos": [48.5105, 4.2921], "town": "Ramerupt"},
-    "X5": {"river": "Aube", "road": "D 960", "osm_way": 195580104, "pos": [48.428, 4.4117],  "town": "Brienne-le-Chateau"},
-    "X6": {"river": "Aube", "road": "D 11b", "osm_way": 195570610, "pos": [48.3733, 4.5221], "town": "south of Brienne"}
+    "X1": {
+      "river": "Aube",
+      "road": "D 677",
+      "osm_way": 202546456,
+      "pos": [
+        48.5383,
+        4.142
+      ],
+      "town": "Arcis-sur-Aube"
+    },
+    "X2": {
+      "river": "Aube",
+      "road": "D 10",
+      "osm_way": 202546457,
+      "pos": [
+        48.5359,
+        4.1283
+      ],
+      "town": "Arcis-sur-Aube"
+    },
+    "X3": {
+      "river": "Aube",
+      "road": "A 26",
+      "osm_way": 157329661,
+      "pos": [
+        48.5437,
+        4.1885
+      ],
+      "town": "Arcis-sur-Aube"
+    },
+    "X4": {
+      "river": "Aube",
+      "road": "D 99",
+      "osm_way": 220738457,
+      "pos": [
+        48.5105,
+        4.2921
+      ],
+      "town": "Ramerupt"
+    },
+    "X5": {
+      "river": "Aube",
+      "road": "D 960",
+      "osm_way": 195580104,
+      "pos": [
+        48.428,
+        4.4117
+      ],
+      "town": "Brienne-le-Chateau"
+    },
+    "X6": {
+      "river": "Aube",
+      "road": "D 11b",
+      "osm_way": 195570610,
+      "pos": [
+        48.3733,
+        4.5221
+      ],
+      "town": "south of Brienne"
+    }
   },
   "mission": "BLUE brigade seizes and holds Aube crossings X1, X2 and X4 no later than H+5 to allow the follow-on division to pass south, and prevents RED from crossing the Aube at X5 and X6.",
   "intent": {
     "purpose": "Keep the Aube open for the division's passage while denying RED a crossing on our flank.",
-    "key_tasks": ["Seize X1, X2 and X4 intact", "Block RED at X5 and X6", "Keep the main supply route Mailly to Arcis open"],
+    "key_tasks": [
+      "Seize X1, X2 and X4 intact",
+      "Block RED at X5 and X6",
+      "Keep the main supply route Mailly to Arcis open"
+    ],
     "end_state": "X1, X2 and X4 held by BLUE, RED east of the Aube, brigade resupplied and ready to pass the division."
   },
   "blue": [
-    {"id": "B-REC", "name": "Recce squadron",          "type": "recon",     "strength": 40,  "kmh": 50, "fuel_l": 6000,  "l_per_km": 18,  "start": "camp_mailly"},
-    {"id": "B-1",   "name": "1st mechanised battalion", "type": "mech_inf",  "strength": 100, "kmh": 35, "fuel_l": 30000, "l_per_km": 140, "start": "camp_mailly"},
-    {"id": "B-2",   "name": "2nd mechanised battalion", "type": "mech_inf",  "strength": 100, "kmh": 35, "fuel_l": 30000, "l_per_km": 140, "start": "camp_mailly"},
-    {"id": "B-3",   "name": "Armoured battalion",       "type": "armour",    "strength": 120, "kmh": 30, "fuel_l": 45000, "l_per_km": 260, "start": "sommesous"},
-    {"id": "B-ENG", "name": "Engineer company",         "type": "engineer",  "strength": 30,  "kmh": 30, "fuel_l": 8000,  "l_per_km": 40,  "start": "camp_mailly", "can": ["bridge_gap_20m", "demolish", "obstacle"]},
-    {"id": "B-LOG", "name": "Logistics battalion",      "type": "logistics", "strength": 20,  "kmh": 40, "fuel_l": 200000,"l_per_km": 120, "start": "camp_mailly", "carries": {"fuel_l": 180000, "water_l": 60000}}
+    {
+      "id": "B-REC",
+      "name": "Recce squadron",
+      "type": "recon",
+      "strength": 40,
+      "kmh": 50,
+      "fuel_l": 6000,
+      "l_per_km": 18,
+      "start": "camp_mailly",
+      "vehicles": 10
+    },
+    {
+      "id": "B-1",
+      "name": "1st mechanised battalion",
+      "type": "mech_inf",
+      "strength": 100,
+      "kmh": 35,
+      "fuel_l": 30000,
+      "l_per_km": 140,
+      "start": "camp_mailly",
+      "vehicles": 40
+    },
+    {
+      "id": "B-2",
+      "name": "2nd mechanised battalion",
+      "type": "mech_inf",
+      "strength": 100,
+      "kmh": 35,
+      "fuel_l": 30000,
+      "l_per_km": 140,
+      "start": "camp_mailly",
+      "vehicles": 40
+    },
+    {
+      "id": "B-3",
+      "name": "Armoured battalion",
+      "type": "armour",
+      "strength": 120,
+      "kmh": 30,
+      "fuel_l": 45000,
+      "l_per_km": 260,
+      "start": "sommesous",
+      "vehicles": 44
+    },
+    {
+      "id": "B-ENG",
+      "name": "Engineer company",
+      "type": "engineer",
+      "strength": 30,
+      "kmh": 30,
+      "fuel_l": 8000,
+      "l_per_km": 40,
+      "start": "camp_mailly",
+      "can": [
+        "bridge_gap_20m",
+        "demolish",
+        "obstacle"
+      ],
+      "vehicles": 12
+    },
+    {
+      "id": "B-LOG",
+      "name": "Logistics battalion",
+      "type": "logistics",
+      "strength": 20,
+      "kmh": 40,
+      "fuel_l": 200000,
+      "l_per_km": 120,
+      "start": "camp_mailly",
+      "carries": {
+        "fuel_l": 180000,
+        "water_l": 60000
+      },
+      "vehicles": 60
+    }
   ],
   "red": [
-    {"id": "R-1", "name": "RED motor-rifle battalion group", "type": "mech_inf", "strength": 110, "kmh": 35, "start": "vitry", "aim": "X5"},
-    {"id": "R-REC", "name": "RED recce company",             "type": "recon",    "strength": 30,  "kmh": 50, "start": "vitry", "aim": "X6"}
+    {
+      "id": "R-1",
+      "name": "RED motor-rifle battalion group",
+      "type": "mech_inf",
+      "strength": 110,
+      "vehicles": 30,
+      "kmh": 35,
+      "start": "vitry",
+      "aim": "X5",
+      "depart_min": 40
+    },
+    {
+      "id": "R-2",
+      "name": "RED tank company",
+      "type": "armour",
+      "strength": 40,
+      "vehicles": 12,
+      "kmh": 30,
+      "start": "vitry",
+      "aim": "X4",
+      "depart_min": 70
+    },
+    {
+      "id": "R-REC",
+      "name": "RED recce company",
+      "type": "recon",
+      "strength": 30,
+      "vehicles": 6,
+      "kmh": 50,
+      "start": "vitry",
+      "aim": "X6",
+      "depart_min": 20
+    }
   ],
   "planning_rules": {
     "attack_ratio_vs_prepared_defence": 3.0,
@@ -44,5 +256,44 @@
     "defence_holds_at_ratio_below": 3.0,
     "water_l_per_person_per_day": 20,
     "one_third_rule": "HQ plans in at most 1/3 of the time before H-hour"
+  },
+  "plan": {
+    "note": "Baseline plan from the optimiser (sib.assign), departures at H+0.",
+    "tasks": {
+      "screen east": {
+        "at": "vitry_west",
+        "kind": "screen"
+      },
+      "seize X1": {
+        "at": "X1",
+        "kind": "seize"
+      },
+      "seize X4": {
+        "at": "X4",
+        "kind": "seize"
+      },
+      "block X5": {
+        "at": "X5",
+        "kind": "block"
+      }
+    }
+  },
+  "sensing": {
+    "detect_km": {
+      "recon": 8,
+      "default": 5
+    },
+    "report_rate_per_min": 0.08,
+    "pos_noise_km": {
+      "recon": 0.2,
+      "default": 0.4
+    },
+    "delay_min": [
+      2,
+      15
+    ],
+    "misidentify": 0.1,
+    "false_reports": 4,
+    "seed": 2026
   }
 }

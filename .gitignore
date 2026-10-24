@@ -3,3 +3,4 @@ data/osm/*.json
 __pycache__/
 .pytest_cache/
 viewer/shots/
+lab/labdata.js

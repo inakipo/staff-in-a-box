@@ -43,6 +43,7 @@
     if (key === 'reports.ghosts') return S.reports.filter(function (r) { return r.truth == null; }).length;
     if (key === 'mc.solver') return mcRace('solver');
     if (key === 'mc.intuitive') return mcRace('intuitive');
+    if (key === 'mission.recce_x6') return S.mission_check ? S.mission_check.red_recce_x6_arrive : null;
     var o = S, parts = key.split('.');
     for (var i = 0; i < parts.length; i++) { if (o == null) return null; o = o[parts[i]]; }
     return o;
@@ -567,6 +568,62 @@
   buildArcs(S.assign.best.assignment, 'assign-arrows', false, 0x7fb2ff, 'arc');
   buildArcs(S.assign.intuitive, 'intuitive-arrows', true, 0xf5b25b, 'arc intu');
 
+  // ---------- The hole at X6: pulsing ring + highlighted Red recce route ----------
+  var holeRing = null, holeRing2 = null, X6P = ll(S.crossings.X6.pos);
+  (function () {
+    var g = layer('hole');
+    holeRing = new THREE.Mesh(makeDyn((RING_SEG + 1) * 2, RING_SEG * 6), flatMat(0xff4d4d, 0.9, 10)); holeRing.material.transparent = true;
+    holeRing2 = new THREE.Mesh(makeDyn((RING_SEG + 1) * 2, RING_SEG * 6), flatMat(0xff4d4d, 1, 10));
+    ringGeom(holeRing2.geometry, X6P[0], X6P[1], 1.5, 0.22, 0.3, false);
+    g.add(holeRing, holeRing2);
+    if (S.truth['R-REC']) {
+      var pts = S.truth['R-REC'].track.map(function (t) { return ll([t[1], t[2]]); }), c = newBuf(), b = newBuf();
+      ribbonInto(c, pts, 0.75, 0.14, 0.25); ribbonInto(b, pts, 0.46, 0.16, 0.25);
+      g.add(new THREE.Mesh(bufGeom(c), flatMat(0x111318, 1, 7)), new THREE.Mesh(bufGeom(b), flatMat(0xff5c5c, 1, 13)));
+    }
+    var arr = S.mission_check ? S.mission_check.red_recce_x6_arrive : null;
+    var lb = addLabel('cut', 'X6 uncovered' + (arr != null ? '<br>Red recce crosses H+' + arr : ''), 'hole', 85, 'l');
+    lb.pos.copy(v3(S.crossings.X6.pos, 1.6)); lb.dx = -30; lb.dy = 34;
+  })();
+  function updateHole(minute) {
+    var ph = (minute % 10) / 10;
+    ringGeom(holeRing.geometry, X6P[0], X6P[1], 1.6 + 2.6 * ph, 0.2, 0.28, false);
+    holeRing.material.opacity = 0.9 * (1 - ph);
+  }
+
+  // ---------- Options A to D: arcs per option ----------
+  var OPTS = S.options || [], optGroups = [], optLabels = [], shownOpt = -1;
+  var REC = S.recommended_option || '';
+  function arcBetween(grp, a, b, color, r) {
+    var d = a.distanceTo(b), mid = a.clone().add(b).multiplyScalar(0.5); mid.y += 2 + d * 0.22;
+    var curve = new THREE.QuadraticBezierCurve3(a, mid, b);
+    var mat = new THREE.MeshLambertMaterial({ color: color, emissive: new THREE.Color(color).multiplyScalar(0.35) });
+    grp.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 80, r || 0.22, 8, false), mat));
+    var cone = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.6, 14), mat);
+    cone.position.copy(b); cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), curve.getTangent(1).normalize()); grp.add(cone);
+    return curve;
+  }
+  var OPT_COL = { A: 0x9aa8b8, B: 0xc084fc, C: 0xf5b25b, D: 0x7fb2ff };
+  OPTS.forEach(function (o, oi) {
+    var g = new THREE.Group(); g.visible = false; layer('option-arrows').add(g); optGroups.push(g);
+    var col = OPT_COL[o.id] || 0x7fb2ff, labs = [], seen = {};
+    (o.arrows || []).forEach(function (ar) {
+      var key = ar.from.join(','), k = seen[key] = (seen[key] || 0) + 1;  // arcs sharing an origin: stagger their labels
+      var a = v3(ar.from, 1.0), b = v3(ar.to, 1.2), curve = arcBetween(g, a, b, col);
+      var dep = o.depart && o.depart[ar.unit] ? ', leaves ' + Math.abs(o.depart[ar.unit]) + ' min early' : '';
+      var lb = addLabel('arc', '<b>' + ar.unit + '</b> &rarr; ' + esc(ar.task) + (dep ? ' <span>' + esc(dep.slice(2)) + '</span>' : ''), 'option-arrows', dep ? 58 : 50, 'c');
+      lb.pos.copy(curve.getPoint([0.42, 0.56, 0.7, 0.3][(k - 1) % 4])); lb.active = false; labs.push(lb);
+    });
+    optLabels.push(labs);
+  });
+  function showOption(i) {
+    shownOpt = i;
+    optGroups.forEach(function (g, k) { g.visible = k === i; });
+    optLabels.forEach(function (labs, k) { labs.forEach(function (lb) { lb.active = k === i; }); });
+    Array.prototype.forEach.call(document.querySelectorAll('.opt'), function (c, k) { c.classList.toggle('shown', k === i); });
+  }
+  function recIndex() { for (var i = 0; i < OPTS.length; i++) if (OPTS[i].id === REC) return i; return OPTS.length - 1; }
+
   // ---------- Camera presets ----------
   var PRESETS = {
     'overview': { t: [3, 0.4, 5], d: 116, pol: 46, az: -10 },
@@ -604,6 +661,7 @@
     return { last: last, total: total };
   }
   function reasonFor(r) {
+    if (r.reason && r.reason !== "not this unit's job") return r.reason;
     var u = S.units[r.unit];
     if (/^screen/.test(r.task) && u.type !== 'recon') return 'screening needs recce';
     if (u.type === 'recon' && !/^screen/.test(r.task)) return 'recce does not hold ground';
@@ -628,7 +686,8 @@
         if (!r) { h += '<td></td>'; return; }
         if (!r.eligible) { h += '<td class="no"><b>' + r.min + '</b><small>' + esc(reasonFor(r)) + '</small></td>'; return; }
         var pick = best.assignment[u] === t, ip = intu[u] === t;
-        h += '<td class="' + (pick ? 'pick' : '') + '" style="background:' + heatColor(r.min) + ';color:#fff"><b>' + r.min + '</b><small>' + Math.round(r.fuel_left * 100) + ' % fuel left</small>' +
+        var sub = r.reason && r.reason !== "not this unit's job" ? esc(r.reason) : Math.round(r.fuel_left * 100) + ' % fuel left';
+        h += '<td class="' + (pick ? 'pick' : '') + '" style="background:' + heatColor(r.min) + ';color:#fff"><b>' + r.min + '</b><small>' + sub + '</small>' +
           (pick ? '<span class="tag">SOLVER</span>' : '') + (ip && !pick ? '<span class="itag">intuitive</span>' : '') + '</td>';
       });
       h += '</tr>';
@@ -680,10 +739,11 @@
   }
   function panelChecks() {
     var v = S.validate, pass = v.filter(function (c) { return c.pass; }).length;
-    var h = '<div class="sumline"><b>' + pass + ' of ' + v.length + '</b><span>checks pass for the solver plan</span></div><div class="checks">';
+    var allOk = pass === v.length;
+    var h = '<div class="sumline' + (allOk ? '' : ' bad') + '"><b>' + pass + ' of ' + v.length + '</b><span>checks pass for the solver plan' + (allOk ? '' : ', ' + (v.length - pass) + ' fail') + '</span></div><div class="checks">';
     v.forEach(function (c) {
       var parts = c.check.split(':'), kind = parts[0], rest = parts.slice(1).join(':').trim();
-      h += '<div class="ck"><span class="okchip ' + (c.pass ? 'pass' : 'fail') + '">' + (c.pass ? 'PASS' : 'FAIL') + '</span><span class="n"><span>' + esc(kind) + '</span> ' + esc(rest) + '</span><span class="w">' + esc(c.why) + '</span></div>';
+      h += '<div class="ck' + (c.pass ? '' : ' failrow') + '"><span class="okchip ' + (c.pass ? 'pass' : 'fail') + '">' + (c.pass ? 'PASS' : 'FAIL') + '</span><span class="n"><span>' + esc(kind) + '</span> ' + esc(rest) + '</span><span class="w">' + esc(c.why) + '</span></div>';
     });
     return h + '</div>';
   }
@@ -735,7 +795,59 @@
     });
     return h + '</div>';
   }
-  var PANELS = { 'assign-table': panelAssignTable, 'assign-why': panelAssignWhy, 'checks': panelChecks, 'race': panelRace, 'fusion-log': panelFusionLog };
+  function effectCover(eff, plan) {
+    var ids = [eff.at].concat(eff.also_covers || []), who = [];
+    Object.keys(plan).forEach(function (u) { if (plan[u].indexOf(eff.at) >= 0) who.push(u + ' (' + plan[u] + ')'); });
+    return { ids: ids, who: who };
+  }
+  function panelMission() {
+    var M = S.mission_check; if (!M) return '';
+    var h = '<div class="pv-title">The mission\u2019s required effects, against the first plan</div><div class="mfx">';
+    M.effects.forEach(function (e) {
+      var c = effectCover(e, M.first_plan), ok = c.who.length > 0;
+      var what = (e.effect === 'seize' ? 'Seize ' : 'Deny ') + c.ids.join(' and ') + (e.by_min ? ' by H+' + e.by_min : '');
+      h += '<div class="mf' + (ok ? '' : ' miss') + '"><span class="okchip ' + (ok ? 'pass' : 'fail') + '">' + (ok ? 'COVERED' : 'UNCOVERED') + '</span><span class="n">' + esc(what) + '</span><span class="w">' + (ok ? esc(c.who.join(', ')) : 'nobody assigned') + '</span></div>';
+    });
+    h += '</div>';
+    // reach X6 bar chart
+    var R = M.reach_x6.slice().sort(function (a, b) { return a.min - b.min; }), red = M.red_recce_x6_arrive, maxM = 160;
+    var W = 640, left = 70, right = 16, top = 26, rowH = 26, H = top + R.length * rowH + 30, X = function (m) { return left + (W - left - right) * m / maxM; };
+    var sv = '<svg viewBox="0 0 ' + W + ' ' + H + '" font-family="Inter, sans-serif">';
+    sv += '<text x="0" y="14" fill="#edf1f6" font-size="13.5" font-weight="700">Minutes for each Blue unit to reach X6</text>';
+    [0, 30, 60, 90, 120, 150].forEach(function (m) { sv += '<line x1="' + X(m) + '" x2="' + X(m) + '" y1="' + (top - 2) + '" y2="' + (H - 24) + '" stroke="#243040"/><text x="' + X(m) + '" y="' + (H - 9) + '" fill="#8d9bab" font-size="11" text-anchor="middle">' + m + '</text>'; });
+    R.forEach(function (r, i) {
+      var y = top + i * rowH, early = r.min < red, recon = r.type === 'recon';
+      var col = early ? '#6b7a8c' : '#ff7a59';
+      sv += '<text x="0" y="' + (y + 16) + '" fill="#c9d3de" font-size="12.5" font-weight="700">' + r.unit + '</text>';
+      sv += '<rect x="' + X(0) + '" y="' + (y + 5) + '" width="' + (X(r.min) - X(0)) + '" height="15" rx="3" fill="' + col + '"/>';
+      sv += '<text x="' + (X(r.min) + 6) + '" y="' + (y + 16) + '" fill="#edf1f6" font-size="11.5">' + r.min + ' min' + (recon && early ? ', recce: may not hold ground' : (early ? '' : ', too late by ' + (r.min - red))) + '</text>';
+    });
+    sv += '<line x1="' + X(red) + '" x2="' + X(red) + '" y1="' + (top - 8) + '" y2="' + (H - 24) + '" stroke="#ff4d4d" stroke-width="2"/>';
+    sv += '<text x="' + (X(red) + 5) + '" y="' + (top - 10) + '" fill="#ff8a8a" font-size="11.5" font-weight="700">Red recce crosses H+' + red + '</text>';
+    sv += '</svg>';
+    h += '<div class="whyv" style="margin-top:12px"><div class="card">' + sv + '</div>';
+    var d = M.drifted_rule;
+    if (d) {
+      h += '<div class="card bug"><div class="pv-title" style="color:#f5b25b">Bug found on the way</div><div class="bugv"><b>' + esc(d.verdict) + ':</b> ' + esc(d.task) + ', ' + esc(d.closest_unit) + ' ready H+' + d.closest_ready + ', needed by H+' + d.deadline + ', short by ' + d.short_by_min + ' min</div><div class="bugn">' + esc(d.note) + '</div></div>';
+    }
+    return h + '</div>';
+  }
+  function panelOptions() {
+    var h = '<div class="pv-title">Same engine, four ways out. Big number = whole mission met in 1,000 runs</div><div class="opts">';
+    OPTS.forEach(function (o, i) {
+      var rec = o.id === REC, pc = o.mc_all_pct, col = pc >= 90 ? '#4ade80' : (pc >= 40 ? '#f5b25b' : '#ff6b6b');
+      var bar = function (lbl, v) { var c = v >= 90 ? '#4ade80' : (v >= 40 ? '#f5b25b' : '#ff6b6b'); return '<div class="hb"><span>' + lbl + '</span><i><em style="width:' + v + '%;background:' + c + '"></em></i><b>' + v + ' %</b></div>'; };
+      var fk = Object.keys(o.top_failures || {})[0], ff = fk ? (o.top_failures[fk] || [])[0] : '';
+      h += '<div class="opt' + (rec ? ' rec' : '') + '" data-i="' + i + '"><div class="oh"><span class="ob">' + o.id + '</span><span class="on">' + esc(o.name) + '</span>' + (rec ? '<span class="tag">RECOMMENDED</span>' : '') + '</div>' +
+        '<div class="oi">' + esc(o.idea) + '</div>' +
+        '<div class="obig"><b style="color:' + col + '">' + pc + ' %</b><span>mission met in 1,000 runs<br>checks ' + o.nominal_pass + ' / ' + o.nominal_total + ' on the nominal plan</span></div>' +
+        bar('X5', o.mc_x5_pct) + bar('X6', o.mc_x6_pct) + bar('X4', o.mc_x4_pct) +
+        '<div class="ofu"><span>Tracked by H+150</span>' + Object.keys(o.fusion_at_h150 || {}).map(function (u) { var v = o.fusion_at_h150[u]; return '<em class="' + (v >= 50 ? 'hi' : (v > 0 ? 'mid' : 'lo')) + '">' + u + ' ' + v + ' %</em>'; }).join('') + '</div>' +
+        (ff ? '<div class="off">' + esc(ff) + '</div>' : '<div class="off">No failures</div>') + '</div>';
+    });
+    return h + '</div>';
+  }
+  var PANELS = { 'mission': panelMission, 'options': panelOptions, 'assign-table': panelAssignTable, 'assign-why': panelAssignWhy, 'checks': panelChecks, 'race': panelRace, 'fusion-log': panelFusionLog };
 
   // ---------- Legend ----------
   var legendEl = document.getElementById('legend');
@@ -776,6 +888,8 @@
     if (has('links')) h += legendRow(sw('thin', '#fde68a'), 'Report joined this track');
     if (has('assign-arrows')) h += legendRow(sw('line', '#7fb2ff'), 'Solver assignment');
     if (lesson.id === 'why') h += legendRow(sw('dash', '#f5b25b'), 'Intuitive assignment');
+    if (lesson.show.panel === 'mission') { h += legendRow(sw('ring', '#ff4d4d'), 'X6: required by the mission, nobody assigned'); h += legendRow(sw('line', '#ff5c5c'), 'Red recce route to X6'); }
+    if (has('option-arrows')) h += legendRow(sw('line', '#7fb2ff'), 'Assignments of the option shown (click a card)');
     if (lesson.show.panel === 'race') { h += legendRow(sw('line', '#6aa8ff'), 'Blue route to X5 (solver plan)'); h += legendRow(sw('line', '#ff6b6b'), 'Red route to X5'); }
     h += '<div class="note">Vertical scale exaggerated 12x. Grid: 1 unit = 1 km.</div>';
     legendEl.innerHTML = h;
@@ -785,7 +899,7 @@
   var cur = -1, progress = 0, playing = false, hooked = false, lastTick = 0;
   var visibleLayers = {};
   function layerOn(n) { return !!visibleLayers[n]; }
-  var ALL_LAYERS = ['terrain', 'roads', 'rivers', 'places', 'crossings', 'cuts', 'units', 'routes', 'reports', 'tracks', 'gates', 'links', 'assign-arrows', 'intuitive-arrows', 'ripple-normal', 'ripple-blown', 'race-routes'];
+  var ALL_LAYERS = ['terrain', 'roads', 'rivers', 'places', 'crossings', 'cuts', 'units', 'routes', 'reports', 'tracks', 'gates', 'links', 'assign-arrows', 'intuitive-arrows', 'ripple-normal', 'ripple-blown', 'race-routes', 'hole', 'option-arrows'];
   ALL_LAYERS.forEach(layer);
   function lessonKind(ls) { var a = ls.show.anim || ''; if (/^ripple/.test(a)) return 'ripple'; if (/^play-/.test(a)) return 'time'; return 'static'; }
   function staticMinute(ls) { return ls.show.layers.indexOf('tracks') >= 0 ? 300 : 0; }
@@ -811,6 +925,7 @@
     if (an === 'ripple-blown') { visibleLayers['ripple-blown'] = true; visibleLayers.cuts = true; }
     if (ls.id === 'why') visibleLayers['intuitive-arrows'] = true;
     if (ls.show.panel === 'race') visibleLayers['race-routes'] = true;
+    if (ls.show.panel === 'mission') visibleLayers.hole = true;
     ALL_LAYERS.forEach(function (n) { layers[n].visible = !!visibleLayers[n]; });
     ['X1', 'X2'].forEach(function (id) { crossObjs[id].group.visible = an !== 'ripple-blown'; crossObjs[id].label.active = an !== 'ripple-blown'; });
     // text
@@ -822,6 +937,10 @@
     var pn = ls.show.panel;
     el('lextra').innerHTML = pn && PANELS[pn] ? PANELS[pn]() : '';
     panel.classList.toggle('dense', !!pn);
+    if (pn === 'options') {
+      Array.prototype.forEach.call(document.querySelectorAll('.opt'), function (c) { c.onclick = function () { showOption(+c.getAttribute('data-i')); if (hooked) { applyProgress(); renderNow(); } }; });
+      showOption(recIndex());
+    }
     document.documentElement.style.setProperty('--pw', pn ? (window.innerWidth >= 1700 ? '760px' : '640px') : '');
     el('pscroll').scrollTop = 0;
     fitPanel();
@@ -882,6 +1001,16 @@
     var minute = kind === 'time' ? p * 360 : staticMinute(ls);
     if (kind === 'time') tlabel.textContent = 'H+' + Math.round(minute);
     if (layerOn('units')) updateUnits(minute);
+    if (layerOn('hole')) {
+      updateHole(minute);
+      var ra = S.mission_check ? S.mission_check.red_recce_x6_arrive : 78;
+      hudHtml = minute < ra ? '<div class="chip">Red recce reaches X6 at <b>H+' + ra + '</b></div>' : '<div class="chip" style="border-color:rgba(255,77,77,.7)"><b style="color:#ff8a8a">X6 crossed at H+' + ra + '</b>, nobody there to stop it</div>';
+    }
+    if (layerOn('option-arrows') && OPTS.length) {
+      if (hooked) showOption(Math.min(OPTS.length - 1, Math.floor(p / 0.75 * OPTS.length))); // A..D over 0..0.75, D held after
+      var so = OPTS[shownOpt] || OPTS[0];
+      hudHtml = '<div class="chip">Option <b>' + so.id + '</b>: ' + esc(so.name) + '</div><div class="chip"><span class="big">' + so.mc_all_pct + ' %</span>mission met</div>';
+    }
     if (layerOn('reports')) {
       var rs = updateReports(minute, an === 'play-reports');
       if (an === 'play-reports') hudHtml = '<div class="chip"><span class="big">' + rs.got + '</span>of ' + S.reports.length + ' reports received</div>' + (reveal ? '<div class="chip" style="border-color:rgba(192,132,252,.6)"><b>' + rs.ghosts + '</b> ghosts so far</div>' : '');

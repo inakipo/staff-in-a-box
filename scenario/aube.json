@@ -7,10 +7,10 @@
     "camp_mailly":   {"name": "Camp de Mailly (assembly area)", "pos": [48.665, 4.213]},
     "arcis":         {"name": "Arcis-sur-Aube", "pos": [48.535, 4.141]},
     "ramerupt":      {"name": "Ramerupt", "pos": [48.515, 4.296]},
-    "brienne":       {"name": "Brienne-le-Chateau", "pos": [48.393, 4.526]},
-    "vitry":         {"name": "Vitry-le-Francois", "pos": [48.725, 4.585]},
+    "brienne":       {"name": "Brienne-le-Château", "pos": [48.393, 4.526]},
+    "vitry":         {"name": "Vitry-le-François", "pos": [48.725, 4.585]},
     "sommesous":     {"name": "Sommesous", "pos": [48.737, 4.203]},
-    "chalons":       {"name": "Chalons-en-Champagne", "pos": [48.957, 4.363]}
+    "chalons":       {"name": "Châlons-en-Champagne", "pos": [48.957, 4.363]}
   },
   "crossings": {
     "X1": {"river": "Aube", "road": "D 677", "osm_way": 202546456, "pos": [48.5383, 4.142],  "town": "Arcis-sur-Aube"},

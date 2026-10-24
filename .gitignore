@@ -1,0 +1,3 @@
+.venv/
+data/osm/*.json
+__pycache__/

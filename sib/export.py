@@ -5,7 +5,7 @@ import json
 
 from shapely.geometry import LineString
 
-from . import assign, fusion, montecarlo, reports, roads, sim, terrain, validate
+from . import assign, fusion, montecarlo, options, reports, roads, sim, terrain, validate
 from .roads import ROOT, km
 
 R5 = lambda x: round(x, 5)
@@ -58,7 +58,8 @@ def _dijkstra_ripple(a, b, kmh, blown=(), every=6):
 def build():
     s = sim.scenario()
     P, X = s["places"], s["crossings"]
-    best, why = assign.explain()
+    first = ["deny X6", "watch X6"]          # the task list as first written; lessons 11-14 use it
+    best, why = assign.explain(drop=first)
     plan = best["assignment"]
     intuitive = {"B-REC": "screen east", "B-1": "seize X1", "B-2": "seize X4", "B-3": "block X5"}
     truth = sim.run(plan, step=2)                 # for display
@@ -97,9 +98,23 @@ def build():
                                               "max_kmh": fusion.MAX_KMH, "alpha": fusion.ALPHA, "beta": fusion.BETA, "coast_min": fusion.COAST_MIN,
                                               "merge_km": fusion.MERGE_KM, "half_life_min": fusion.HALF_LIFE_MIN}},
         "assign": {"best": best, "why": why, "intuitive": intuitive,
-                   "table": [{"unit": u, "task": k, **v} for (u, k), v in assign.table().items()]},
+                   "table": [{"unit": u, "task": k, **v} for (u, k), v in assign.table(drop=first).items() if u != "B-ENG"]},
         "validate": validate.check(plan, sim.run(plan, tracks=False)),
         "montecarlo": mc,
+        "mission_check": {
+            "effects": s["mission_effects"],
+            "first_plan": plan,
+            "red_recce_x6_arrive": sim.run(plan, tracks=False)["R-REC"]["arrive"],
+            "drifted_rule": {"verdict": "INFEASIBLE", "task": "deny X6", "deadline": 78, "closest_unit": "B-1", "closest_ready": 95, "short_by_min": 17,
+                             "note": "The solver's copy of the race rule said 'arrive before the enemy'; the validator's said 'arrive first, or win the attack'. One shared rule fixed it."},
+            "reach_x6": [{"unit": u["id"], "type": u["type"], "min": roads.route(P[u["start"]]["pos"], X["X6"]["pos"], kmh=u["kmh"])["min"]} for u in s["blue"]],
+        },
+        "options": [{k: o[k] for k in ("id", "name", "idea", "plan", "depart", "nominal_pass", "nominal_total", "nominal_fails", "mc_all_pct",
+                                       "mc_x5_pct", "mc_x6_pct", "mc_x4_pct", "fusion_at_h150", "top_failures")}
+                    | {"arrows": [{"unit": u, "task": t, "from": P[next(b for b in s["blue"] if b["id"] == u)["start"]]["pos"],
+                                   "to": (P.get(s["plan"]["tasks"][t]["at"]) or X[s["plan"]["tasks"][t]["at"]])["pos"]} for u, t in o["plan"].items()]}
+                    for o in options.evaluate()],
+        "recommended_option": "D",
     }
     js = "window.SIB = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n"
     (ROOT / "viewer/data.js").write_text(js)

@@ -1,0 +1,164 @@
+[
+ {
+  "id": "A",
+  "name": "Accept the risk at X6",
+  "plan": {
+   "B-REC": "screen east",
+   "B-1": "block X5",
+   "B-2": "seize X4",
+   "B-3": "seize X1"
+  },
+  "depart": {},
+  "idea": "Keep the plan; Red recce (6 vehicles) may cross X6 unseen.",
+  "nominal_pass": 12,
+  "nominal_total": 14,
+  "nominal_fails": [
+   {
+    "check": "mission: deny X6",
+    "pass": false,
+    "why": "deny X6: nobody assigned"
+   },
+   {
+    "check": "race: nobody vs R-REC at X6",
+    "pass": false,
+    "why": "R-REC crosses X6 at H+78 unopposed"
+   }
+  ],
+  "mc_all_pct": 0.0,
+  "mc_x5_pct": 89.3,
+  "mc_x6_pct": 0.0,
+  "mc_x4_pct": 100.0,
+  "fusion_at_h150": {
+   "R-1": 40,
+   "R-2": 0,
+   "R-REC": 0
+  },
+  "top_failures": {
+   "mission: deny X6": [
+    "deny X6: nobody assigned",
+    "deny X6: nobody assigned"
+   ],
+   "race: nobody vs R-REC at X6": [
+    "R-REC crosses X6 at H+67 unopposed",
+    "R-REC crosses X6 at H+59 unopposed"
+   ],
+   "race: B-1 vs R-1 at X5": [
+    "Red first by 1 min; Blue must attack at 1.3:1, needs 2.0:1",
+    "Red first by 8 min; Blue must attack at 1.3:1, needs 2.0:1"
+   ]
+  }
+ },
+ {
+  "id": "B",
+  "name": "Recce watches X6 instead of the east",
+  "plan": {
+   "B-REC": "watch X6",
+   "B-1": "block X5",
+   "B-2": "seize X4",
+   "B-3": "seize X1"
+  },
+  "depart": {},
+  "idea": "We would see Red at X6, but lose the early warning on the main Red force.",
+  "nominal_pass": 12,
+  "nominal_total": 14,
+  "nominal_fails": [
+   {
+    "check": "mission: deny X6",
+    "pass": false,
+    "why": "deny X6: nobody assigned (B-REC only watching)"
+   },
+   {
+    "check": "race: nobody vs R-REC at X6",
+    "pass": false,
+    "why": "R-REC crosses X6 at H+78 unopposed"
+   }
+  ],
+  "mc_all_pct": 0.0,
+  "mc_x5_pct": 89.3,
+  "mc_x6_pct": 0.0,
+  "mc_x4_pct": 100.0,
+  "fusion_at_h150": {
+   "R-1": 43,
+   "R-2": 3,
+   "R-REC": 80
+  },
+  "top_failures": {
+   "mission: deny X6": [
+    "deny X6: nobody assigned (B-REC only watching)",
+    "deny X6: nobody assigned (B-REC only watching)"
+   ],
+   "race: nobody vs R-REC at X6": [
+    "R-REC crosses X6 at H+67 unopposed",
+    "R-REC crosses X6 at H+59 unopposed"
+   ],
+   "race: B-1 vs R-1 at X5": [
+    "Red first by 1 min; Blue must attack at 1.3:1, needs 2.0:1",
+    "Red first by 8 min; Blue must attack at 1.3:1, needs 2.0:1"
+   ]
+  }
+ },
+ {
+  "id": "C",
+  "name": "Re-task: a battalion clears X6, engineers blow X5",
+  "plan": {
+   "B-REC": "screen east",
+   "B-1": "seize X4",
+   "B-2": "deny X6",
+   "B-3": "seize X1",
+   "B-ENG": "block X5"
+  },
+  "depart": {},
+  "idea": "The solver's plan with no head start: it attacks the small Red recce at X6 instead of racing it.",
+  "nominal_pass": 15,
+  "nominal_total": 15,
+  "nominal_fails": [],
+  "mc_all_pct": 50.2,
+  "mc_x5_pct": 50.2,
+  "mc_x6_pct": 100.0,
+  "mc_x4_pct": 100.0,
+  "fusion_at_h150": {
+   "R-1": 50,
+   "R-2": 3,
+   "R-REC": 70
+  },
+  "top_failures": {
+   "race: B-ENG vs R-1 at X5": [
+    "charges ready H+110, Red arrives H+91: 19 min too late",
+    "charges ready H+106, Red arrives H+104: 2 min too late"
+   ]
+  }
+ },
+ {
+  "id": "D",
+  "name": "Same, engineers leave 25 min early",
+  "plan": {
+   "B-REC": "screen east",
+   "B-1": "seize X4",
+   "B-2": "deny X6",
+   "B-3": "seize X1",
+   "B-ENG": "block X5"
+  },
+  "depart": {
+   "B-ENG": -25
+  },
+  "idea": "The smallest engineer head start that holds every crossing in at least 90 % of 1,000 runs.",
+  "nominal_pass": 15,
+  "nominal_total": 15,
+  "nominal_fails": [],
+  "mc_all_pct": 89.6,
+  "mc_x5_pct": 89.6,
+  "mc_x6_pct": 100.0,
+  "mc_x4_pct": 100.0,
+  "fusion_at_h150": {
+   "R-1": 50,
+   "R-2": 3,
+   "R-REC": 70
+  },
+  "top_failures": {
+   "race: B-ENG vs R-1 at X5": [
+    "charges ready H+130, Red arrives H+88: 42 min too late",
+    "charges ready H+104, Red arrives H+87: 17 min too late"
+   ]
+  }
+ }
+]

@@ -75,15 +75,27 @@ window.LESSONS = [
   },
   {
     id: "validate", title: "The validator: unit tests for a plan", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "units"], panel: "checks", camera: "overview" },
-    plain: "Every rule becomes a check that passes or fails with a reason: coverage, deadline, fuel reserve, who wins the race to each bridge and whether the force ratio holds.",
-    why: "A plan that 'looks fine' and a plan that passes thirteen named checks are very different things to put in front of a commander.",
-    tech: "Race rule: if Blue arrives first it defends, and the defence holds while the attacker ratio is below 3:1. If Red arrives first, Blue must attack and needs 2:1 against a hasty defence. Ratios use vehicle counts."
+    plain: "Every rule becomes a check that passes or fails with a reason: the mission's bridges, deadlines, fuel reserve, and who wins the race to each bridge. Two checks fail: nobody is assigned to deny bridge X6, so the Red recce crosses it unopposed.",
+    why: "The checks are written against the MISSION, not against the planner's task list. My first validator checked the task list I wrote, passed 13 of 13, and missed that the mission names X6. Tests must encode the spec.",
+    tech: "Race rule: if Blue arrives first it defends, and the defence holds while the attacker ratio is below 3:1. If Red arrives first, Blue must attack and needs 2:1 against a hasty defence. Engineers must have charges ready (arrival + 20 min) before Red arrives. Ratios use vehicle counts."
   },
   {
     id: "montecarlo", title: "Monte Carlo: does the plan survive bad luck?", show: { layers: ["terrain", "places", "crossings"], panel: "race", camera: "brienne" },
     plain: "We ran each plan 1,000 times with late starts, slow roads and a Red force that is early or fast. Each dot is one run: when Blue reached the Brienne bridge vs when Red did. Dots above the line, Blue got there first. Solver plan: {{mc.solver}} % hold the bridge. Intuitive plan: {{mc.intuitive}} %.",
     why: "A plan is only as good as its worst likely day. The solver's plan is almost twice as robust, and the failures name their cause.",
     tech: "Seeded random perturbations: Blue start delay ~ exponential, mean 10 min, capped at 60; Blue speed x 0.75 to 1.0; Red departure +/- 25 min; Red speed x 0.8 to 1.15. Speeds quantised to 5 % so routes come from cache: 1,000 runs in about 2 seconds."
+  },
+  {
+    id: "hole", title: "The hole in the plan", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "units", "routes"], panel: "mission", anim: "play-truth", camera: "brienne" },
+    plain: "The mission says: stop Red crossing at X5 and X6. The first plan only covered X5. Red's recce company drives straight to X6 and crosses at H+{{mission.recce_x6}}, unseen and unopposed. Can any Blue unit get there first? The fastest is our own recce, 2 minutes ahead, and recce is not allowed to hold ground.",
+    why: "A real staff must catch this in mission analysis and go back to the commander. Here the engine caught it. The first verdict was 'infeasible, short by 17 minutes', but that came from a bug: the solver and the validator each had their own copy of the race rule, and the copies had drifted apart.",
+    tech: "Fix: one function, race_ok(), used by both. A 40-vehicle battalion arriving 17 minutes after a 6-vehicle recce company still clears the bridge by attacking at 6.7:1 (needs 2:1). With one shared rule the solver finds a plan with no head start."
+  },
+  {
+    id: "options", title: "Four ways out, measured", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "option-arrows"], panel: "options", camera: "overview" },
+    plain: "Each way out runs through the same engine: the checks, 1,000 runs of bad luck, and what our sensors would see. Accepting the risk loses X6 every time. The solver's re-task holds X6 every time but the engineers at X5 are a coin flip. Sending the engineers 30 minutes early makes the whole mission hold in 94 % of runs.",
+    why: "This is the 'acceptable' test that only a human can pass. The engine does not choose; it puts a number on every option so the commander chooses with data.",
+    tech: "Head start found by search: the smallest engineer lead time, in 5-minute steps, for which ALL checks pass in at least 90 % of 1,000 seeded runs. Fusion column: share of 30 seeded report streams in which each Red unit is tracked by H+150."
   },
   {
     id: "end", title: "The model drafts; the maths decides", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "units", "tracks"], camera: "overview" },

@@ -255,14 +255,17 @@
     "attack_ratio_vs_hasty_defence": 2.0,
     "defence_holds_at_ratio_below": 3.0,
     "water_l_per_person_per_day": 20,
-    "one_third_rule": "HQ plans in at most 1/3 of the time before H-hour"
+    "one_third_rule": "HQ plans in at most 1/3 of the time before H-hour",
+    "demolition_prep_min": 20,
+    "enemy_estimate": "Most likely enemy course of action from intelligence: RED recce to X6, main body to X5, tanks to X4 (the nominal Red timings)."
   },
   "plan": {
-    "note": "Baseline plan from the optimiser (sib.assign), departures at H+0.",
+    "note": "Tasks are generated from mission_effects (sib.assign.tasks); screen east is a supporting task.",
     "tasks": {
       "screen east": {
         "at": "vitry_west",
-        "kind": "screen"
+        "kind": "screen",
+        "supporting": true
       },
       "seize X1": {
         "at": "X1",
@@ -275,6 +278,15 @@
       "block X5": {
         "at": "X5",
         "kind": "block"
+      },
+      "deny X6": {
+        "at": "X6",
+        "kind": "block"
+      },
+      "watch X6": {
+        "at": "X6",
+        "kind": "screen",
+        "supporting": true
       }
     }
   },
@@ -295,5 +307,28 @@
     "misidentify": 0.1,
     "false_reports": 4,
     "seed": 2026
-  }
+  },
+  "mission_effects": [
+    {
+      "effect": "seize",
+      "at": "X1",
+      "also_covers": [
+        "X2"
+      ],
+      "by_min": 300
+    },
+    {
+      "effect": "seize",
+      "at": "X4",
+      "by_min": 300
+    },
+    {
+      "effect": "deny",
+      "at": "X5"
+    },
+    {
+      "effect": "deny",
+      "at": "X6"
+    }
+  ]
 }

@@ -50,22 +50,10 @@ window.LESSONS = [
     tech: "Qwen3.5-4B, 4-bit, MLX; LoRA fine-tuned for 200 steps on 3,001 generated messages (rented A40, MLX CUDA backend; the same adapter loads on the Mac). Honest test: messages rewritten by a different model, kept only if every number and landmark survived. On the Mac: about 3 s per message, 0.63 GB."
   },
   {
-    id: "gate", title: "Fusion, part 1: predict, then gate", show: { layers: ["terrain", "roads", "rivers", "places", "reports", "tracks", "gates"], anim: "play-fusion", camera: "east" },
-    plain: "Each track predicts where its column should be now. The circle around it is the gate: a new report inside the circle may belong to it; outside, it cannot. The circle grows while nobody reports, because the column could have moved.",
-    why: "Without a gate, every report would stick to the nearest track, however far. The gate encodes physics: a column cannot teleport.",
-    tech: "Prediction = last position + velocity x min(elapsed, 15 min) (coasting). Gate = min(2.5 km + 1 km per 10 min since last sighting, 5 km). Also rejected if the implied speed exceeds 60 km/h."
-  },
-  {
-    id: "update", title: "Fusion, part 2: join, nudge, confirm", show: { layers: ["terrain", "roads", "rivers", "places", "reports", "tracks", "gates", "links"], anim: "play-fusion", camera: "east" },
-    plain: "A report inside the gate joins its nearest track and nudges it halfway towards what was seen. A lonely report starts a tentative track; a second report confirms it. Ghosts stay alone and fade.",
-    why: "Blending prediction and observation is more accurate than either alone: the report is noisy, the prediction is stale. Requiring two reports filters out ghosts.",
-    tech: "Alpha-beta filter (a light Kalman filter): position = prediction + 0.5 x residual; velocity += 0.2 x residual / dt. Velocity starts from the first two sightings. Confidence halves every 60 minutes without news."
-  },
-  {
-    id: "lessons", title: "Fusion, part 3: six versions to get it right", show: { layers: ["terrain", "places", "tracks"], panel: "fusion-log", camera: "overview" },
-    plain: "The first version made zero tracks. Each fix came from a measured failure: duplicates are normal, columns stop, gaps happen, merges must keep the newest sighting, and the gate needs a cap.",
-    why: "This is the forward-deployed habit: measure, name the cause, change one thing, measure again. Result over 30 seeded runs: 1.2 tracks per Red unit, about 1 km error, almost no false tracks.",
-    tech: "Why not the Hungarian algorithm? It matches one-to-one, which is right for radar (one blip per target per sweep) and wrong for human reports, where three soldiers report the same column. Re-identification: reachable at 45 km/h along roads (straight line x 1.3), same type, sizes within 1.6x, both tracks with 2+ reports."
+    id: "fusion", title: "From messages to enemy columns", show: { layers: ["terrain", "roads", "rivers", "places", "reports", "tracks", "gates", "links"], anim: "play-fusion", panel: "fusion-one", camera: "east" },
+    plain: "Every message is either about a column we already know, or about a new one. Rings are columns the computer believes in, pale circles are their gates, and thin lines show which message joined which column.",
+    why: "No understanding needed: only where, when and how fast. That makes every decision explainable, and ghost messages die out on their own because nothing ever confirms them.",
+    tech: "Prediction with 15-minute coasting; gate min(2.5 km + 1 km per 10 min, 5 km); 60 km/h plausibility; alpha-beta update (0.5, 0.2); confirmation at 2 reports; re-identification by reachability, type and size; merges keep the newest sighting. Not one-to-one (Hungarian) matching: human reports duplicate. Scoreboard: docs/fusion-log.md."
   },
   {
     id: "assign", title: "Optimisation: who does what", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "units", "assign-arrows"], panel: "assign-table", camera: "overview" },

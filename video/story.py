@@ -41,15 +41,15 @@ SEG = [
     dict(ch="Question 2 of 5: where is the enemy?", lesson="reports", p=(0.2, 0.75), cap="We only see what soldiers report",
          text="What the headquarters actually gets are messages from soldiers: these yellow pins. They arrive late, the positions are a few "
               "hundred metres off, the counts are wrong, and a few are ghosts that report nothing real. Forty three messages in this run."),
-    dict(ch="Question 2 of 5: where is the enemy?", lesson="gate", p=(0.45, 0.8), cap="Which messages belong together?",
+    dict(ch="Question 2 of 5: where is the enemy?", lesson="fusion", p=(0.45, 0.8), cap="Which messages belong together?",
          text="The computer has to decide which messages are about the same enemy column. Each ring is a guess: an enemy column is probably "
               "here. The pale circle around it is the gate. A new message inside the circle may belong to that column. Outside, it cannot, "
               "because a column cannot teleport."),
-    dict(ch="Question 2 of 5: where is the enemy?", lesson="update", p=(0.6, 1), cap="Two messages confirm. Ghosts fade.",
+    dict(ch="Question 2 of 5: where is the enemy?", lesson="fusion", p=(0.6, 1), cap="Two messages confirm. Ghosts fade.",
          text="A message inside the gate nudges the ring halfway towards where it was seen. One message alone stays a dashed maybe; a second "
               "one confirms it. Ghost messages stay alone and fade away. In the end, forty three messages become exactly two confirmed enemy "
               "columns: one for each Red unit our soldiers saw."),
-    dict(ch="Question 2 of 5: where is the enemy?", lesson="lessons", p=(0, 0.5), panel=True, cap="Six versions to get it right",
+    dict(ch="Question 2 of 5: where is the enemy?", lesson="fusion", p=(0, 0.5), panel=True, cap="Six versions to get it right",
          text="Getting this right took six versions. The first one created no columns at all. Each fix came from measuring a failure: "
               "duplicate messages are normal, columns stop at bridges, and the gate needs a maximum size, or ghosts confirm each other. "
               "Measure, find the cause, change one thing, measure again."),

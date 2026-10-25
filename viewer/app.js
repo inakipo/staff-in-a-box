@@ -786,6 +786,22 @@
     ['5', 'merge keeps the newest sighting’s position and speed', '72 % found, 1.27 tracks per unit at t=200; but 0.4 false tracks per run at t=300', 'the gate grew 1 km per 10 min without a cap: after 100 silent minutes it was 12 km wide, so ghost reports confirmed each other'],
     ['6', 'gate capped at 5 km', '<b>72 / 78 % found, 1.17 / 1.25 tracks per unit, 0.97 / 0.94 km error, 0 / 0.07 false tracks per run</b> (t=200 / t=300)', 'current']
   ];
+  function panelFusionOne() {
+    var snaps = S.fusion.snapshots, last = snaps[snaps.length - 1].tracks;
+    var conf = last.filter(function (t) { return t.confirmed; }).length, tent = last.length - conf, nrep = S.reports.length;
+    var ghosts = S.reports.filter(function (r) { return r.truth == null; }).length;
+    var h = '<div class="f1"><div class="f1big"><b>' + nrep + '</b><span>messages</span><i>&rarr;</i><b>' + conf + '</b><span>confirmed enemy columns</span></div>' +
+      '<div class="f1sub">' + ghosts + ' of the messages were ghosts. They stayed alone and never became columns (' + tent + ' single-message maybes left).</div>';
+    var rules = [['Predict', 'where each known column should be now: last position plus its speed, for at most 15 minutes, then hold.'],
+                 ['Gate', 'a new message may join only if it lands inside a circle around that guess: 2.5 km, growing while nobody reports, never over 5 km.'],
+                 ['Speed check', 'joining must be physically possible: no column drives faster than 60 km/h.'],
+                 ['Join and confirm', 'the message joins the nearest column and nudges it halfway. One message is a maybe; two confirm it.']];
+    h += '<div class="f1rules">' + rules.map(function (r, k) { return '<div class="f1r"><em>' + (k + 1) + '</em><div><b>' + r[0] + ':</b> ' + r[1] + '</div></div>'; }).join('') + '</div>';
+    h += '<div class="f1log"><div class="rsh">It took six measured versions</div><div class="f1v">' +
+      FUSION_LOG.map(function (r, i) { var cur = i === FUSION_LOG.length - 1; return '<span class="' + (cur ? 'cur' : '') + '" title="' + esc(r[1]) + '">v' + r[0] + '</span>'; }).join('<i>&rarr;</i>') +
+      '</div><div class="f1note">From 0 confirmed columns in v0 to 1.2 tracks per Red unit, about 1 km error and almost no false tracks. Each step fixed one measured failure: duplicates are normal, columns stop, the gate needs a cap.</div></div>';
+    return h + '</div>';
+  }
   function panelFusionLog() {
     var h = '<div class="pv-title">How fusion got good: 30 seeded report streams per version</div><div class="flog">';
     FUSION_LOG.forEach(function (r, i) {
@@ -891,7 +907,7 @@
     });
   })();
 
-  var PANELS = { 'radio': panelRadio, 'mission': panelMission, 'options': panelOptions, 'assign-table': panelAssignTable, 'assign-why': panelAssignWhy, 'checks': panelChecks, 'race': panelRace, 'fusion-log': panelFusionLog };
+  var PANELS = { 'fusion-one': panelFusionOne, 'radio': panelRadio, 'mission': panelMission, 'options': panelOptions, 'assign-table': panelAssignTable, 'assign-why': panelAssignWhy, 'checks': panelChecks, 'race': panelRace, 'fusion-log': panelFusionLog };
 
   // ---------- Legend ----------
   var legendEl = document.getElementById('legend');

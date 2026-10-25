@@ -847,7 +847,51 @@
     });
     return h + '</div>';
   }
-  var PANELS = { 'mission': panelMission, 'options': panelOptions, 'assign-table': panelAssignTable, 'assign-why': panelAssignWhy, 'checks': panelChecks, 'race': panelRace, 'fusion-log': panelFusionLog };
+
+  // ---------- Reading the radio: real messages, what the local model read, what the guard changed ----------
+  var TYPE_NAME = { armour: 'tanks', mech_inf: 'troop carriers', recon: 'recce', unknown: 'unknown vehicles' };
+  function locText(l) {
+    if (!l) return '?';
+    if (l.grid) return 'grid ' + esc(l.grid);
+    var a = l.anchor ? (/^X\d$/.test(l.anchor) ? 'bridge ' + l.anchor : esc(l.anchor)) : '?';
+    return (l.distance_km ? fmtNum(l.distance_km) + ' km ' + (l.bearing || '') + ' of ' : 'at ') + a;
+  }
+  function panelRadio() {
+    var R = S.radio; if (!R) return '<p class="muted">Run the reading test to fill this panel.</p>';
+    var h = '<div class="radio">';
+    R.examples.forEach(function (e, k) {
+      var raw = e.raw || {}, g = e.guarded || {}, ok = e.ok || {};
+      var chip = function (label, val, good, extra) { return '<span class="rchip' + (good ? '' : ' bad') + '"><i>' + label + '</i>' + val + (extra || '') + '</span>'; };
+      var timeChip = (raw.time && !g.time)
+        ? '<span class="rchip struck"><i>time</i><s>' + esc(raw.time) + '</s><em>not in the message: invented, dropped by the guard</em></span>'
+        : chip('time', g.time ? esc(g.time) : 'none', ok.time);
+      h += '<div class="rmsg"><div class="rq"><span class="rl">' + (e.lang === 'fr' ? 'FR' : 'EN') + '</span>' + esc(e.text) + '</div>' +
+        '<div class="rarrow">the 4B model on the laptop reads</div><div class="rchips">' + timeChip +
+        chip('count', esc(g.count), ok.count) + chip('type', TYPE_NAME[g.unit_type] || esc(g.unit_type), ok.unit_type) +
+        chip('state', esc(g.activity), ok.activity) + (g.heading ? chip('heading', esc(g.heading), ok.heading) : '') +
+        chip('where', locText(g.location), true) + '</div>' +
+        '<div class="rarrow">code turns the reference into a position</div><div class="rpos">' +
+        (e.err_km != null ? Math.round(e.err_km * 1000) + ' m from where the vehicles really were' : 'no position') + '</div></div>';
+    });
+    var sc = R.scores;
+    h += '<div class="rscore"><div class="rsh">Messages read fully right</div><table><tr><th></th><th>training style</th><th>rewritten by another model</th></tr>' +
+      '<tr><td>base 4B, prompted</td><td>' + sc.same_style.base + ' %</td><td>' + sc.rewritten.base + ' %</td></tr>' +
+      '<tr class="best"><td>fine-tuned + code guard</td><td>' + sc.same_style['ft200+guard'] + ' %</td><td>' + sc.rewritten['ft200+guard'] + ' %</td></tr></table></div>';
+    return h + '</div>';
+  }
+  (function radioPins() {
+    if (!S.radio) return;
+    var gm = new THREE.MeshLambertMaterial({ color: 0xffd166, emissive: 0x5a4300 }), tm = new THREE.MeshLambertMaterial({ color: 0xf04848, emissive: 0x5a0a0a });
+    S.radio.examples.forEach(function (e, k) {
+      if (!e.pos) return;
+      [[e.pos, gm, 0.55], [e.true, tm, 0.38]].forEach(function (q) {
+        var p = ll(q[0]), m = new THREE.Mesh(new THREE.SphereGeometry(q[2], 16, 12), q[1]);
+        m.position.set(p[0], yAt(p[0], p[1]) + 0.7, p[1]); layer('radio').add(m);
+      });
+    });
+  })();
+
+  var PANELS = { 'radio': panelRadio, 'mission': panelMission, 'options': panelOptions, 'assign-table': panelAssignTable, 'assign-why': panelAssignWhy, 'checks': panelChecks, 'race': panelRace, 'fusion-log': panelFusionLog };
 
   // ---------- Legend ----------
   var legendEl = document.getElementById('legend');

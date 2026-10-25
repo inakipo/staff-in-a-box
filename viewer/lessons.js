@@ -44,6 +44,12 @@ window.LESSONS = [
     tech: "Detection range 8 km for recce, 5 km for others; a report with probability 0.08 per minute while in range; position noise 200 to 400 m (Gaussian); delay 2 to 15 min; size x 0.6 to 1.3; 10 % misidentified; 4 random ghosts. Seed 2026."
   },
   {
+    id: "radio", title: "Reading the radio", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "radio"], panel: "radio", camera: "east" },
+    plain: "Reports arrive as messy radio text in French and English. A 4B language model running on this laptop, offline, only reads each message into fields. Code turns the location into a map position and checks every field against the text.",
+    why: "The model is good at language and bad at certainty, so it never decides anything. When it invents a time that is not in the message, the code guard drops it. Yellow pins are where the code placed each report: 50 to 210 m from the real vehicles.",
+    tech: "Qwen3.5-4B, 4-bit, MLX; LoRA fine-tuned for 200 steps on 3,001 generated messages (rented A40, MLX CUDA backend; the same adapter loads on the Mac). Honest test: messages rewritten by a different model, kept only if every number and landmark survived. On the Mac: about 3 s per message, 0.63 GB."
+  },
+  {
     id: "gate", title: "Fusion, part 1: predict, then gate", show: { layers: ["terrain", "roads", "rivers", "places", "reports", "tracks", "gates"], anim: "play-fusion", camera: "east" },
     plain: "Each track predicts where its column should be now. The circle around it is the gate: a new report inside the circle may belong to it; outside, it cannot. The circle grows while nobody reports, because the column could have moved.",
     why: "Without a gate, every report would stick to the nearest track, however far. The gate encodes physics: a column cannot teleport.",

@@ -247,3 +247,23 @@ table.heat td .itag { position: absolute; top: -8px; left: -4px; font-size: 9.5p
   .checks .ck { grid-template-columns: 52px 1fr; }
   .checks .ck .w { grid-column: 2; }
 }
+
+.radio { display: flex; flex-direction: column; gap: 12px; }
+.rmsg { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.rq { font-size: 13.5px; line-height: 1.45; color: var(--text); font-style: italic; }
+.rl { font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: .08em; color: #0d1218; background: #ffd166; border-radius: 4px; padding: 1px 5px; margin-right: 7px; }
+.rarrow { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 7px 0 5px; }
+.rarrow:before { content: "\2193  "; }
+.rchips { display: flex; flex-wrap: wrap; gap: 5px; }
+.rchip { font-size: 12px; background: rgba(74,222,128,.10); border: 1px solid rgba(74,222,128,.35); color: var(--text); border-radius: 6px; padding: 2px 7px; }
+.rchip i { font-style: normal; color: var(--muted); margin-right: 5px; font-size: 11px; }
+.rchip.bad { background: rgba(255,95,95,.12); border-color: rgba(255,95,95,.45); }
+.rchip.struck { background: rgba(255,209,102,.10); border-color: rgba(255,209,102,.5); }
+.rchip.struck s { color: var(--red); margin-right: 6px; }
+.rchip.struck em { font-style: normal; color: #ffd166; font-size: 11px; }
+.rpos { font-size: 12.5px; color: #ffd166; font-weight: 600; }
+.rscore table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.rscore th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; padding: 4px 6px; }
+.rscore td { padding: 5px 6px; border-top: 1px solid var(--line); }
+.rscore tr.best td { color: var(--green); font-weight: 700; }
+.rsh { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }

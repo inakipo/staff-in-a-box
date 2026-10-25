@@ -55,6 +55,39 @@ def _dijkstra_ripple(a, b, kmh, blown=(), every=6):
     return {"settled": len(order), "points": pts, "path": [[R5(p[0]), R5(p[1])] for p in reversed(path)], "minutes": round(order[-1][0], 1)}
 
 
+def _radio():
+    """Three real messages from the rewritten test, what the fine-tuned model read, what the guard changed, and the scores."""
+    from . import guard, radio
+    from .reading import D
+    try:
+        msgs = {m["uid"]: m for m in json.load((D / "eval_rw.json").open())}
+        out = {json.loads(l)["id"]: json.loads(l) for l in (D / "eval_rw.ft200.jsonl").open()}
+        scores = {n: json.load((D / f"score_rw.{n}.json").open())["fields"]["all"] for n in ("base", "ft200+guard")}
+        scores_t = {n: json.load((D / f"score.{n}.json").open())["fields"]["all"] for n in ("base", "ft200+guard")}
+    except FileNotFoundError:
+        return None
+    def ok(e, m):
+        return {f: str(e.get(f)) == str(m["gold"][f]) for f in ("time", "count", "unit_type", "activity", "heading")}
+    def pick(cond):
+        for uid, m in msgs.items():
+            r = out.get(uid)
+            if r and r["parsed"] and cond(m, r["parsed"], guard.guard(m["text"], r["parsed"])):
+                return uid
+    full = lambda m, e: all(ok(e, m).values())
+    picks = [pick(lambda m, raw, g: raw.get("time") and not m["gold"]["time"] and full(m, g)),
+             pick(lambda m, raw, g: m["lang"] == "fr" and "grid" not in m["gold"]["location"] and full(m, g) and m["gold"]["location"].get("distance_km")),
+             pick(lambda m, raw, g: m["lang"] == "fr" and "grid" in m["gold"]["location"] and full(m, g))]
+    ex = []
+    for uid in [u for u in picks if u]:
+        m, raw = msgs[uid], out[uid]["parsed"]
+        g = guard.guard(m["text"], raw)
+        pos = radio.locate(g.get("location") or {})
+        ex.append({"text": m["text"], "lang": m["lang"], "raw": raw, "guarded": g, "ok": ok(g, m),
+                   "pos": [R5(pos[0]), R5(pos[1])] if pos else None, "true": [R5(x) for x in m["true_pos"]],
+                   "err_km": round(km(pos, m["true_pos"]), 2) if pos else None})
+    return {"examples": ex, "scores": {"same_style": scores_t, "rewritten": scores}}
+
+
 def build():
     s = sim.scenario()
     P, X = s["places"], s["crossings"]
@@ -115,6 +148,7 @@ def build():
                                    "to": (P.get(s["plan"]["tasks"][t]["at"]) or X[s["plan"]["tasks"][t]["at"]])["pos"]} for u, t in o["plan"].items()]}
                     for o in options.evaluate()],
         "recommended_option": "D",
+        "radio": _radio(),
     }
     js = "window.SIB = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n"
     (ROOT / "viewer/data.js").write_text(js)

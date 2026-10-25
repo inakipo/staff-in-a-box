@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Twenty Deliveries</title>
+<style>
+:root{--bg:#f6f3ec;--ink:#1d232c;--dim:#6b7280;--line:#d8d2c4;--ok:#1a9b62;--bad:#d64545;--card:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+h1{font-size:30px;margin-bottom:6px}
+.sub{color:var(--dim);font-size:17px;margin-bottom:16px}
+.stage{width:min(1150px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;gap:22px;flex-wrap:wrap}
+.mapbox{flex:3;min-width:320px}
+svg{width:100%;height:auto;display:block;border-radius:12px;background:#fbfaf6}
+.side{flex:1;min-width:230px;display:flex;flex-direction:column;gap:14px}
+.total{font-size:44px;font-weight:800;line-height:1}
+.total small{display:block;font-size:16px;font-weight:500;color:var(--dim);margin-top:6px}
+.vans div{display:flex;align-items:center;gap:10px;font-size:17px;margin:6px 0}
+.vans i{width:22px;height:8px;border-radius:4px;display:inline-block}
+.delta{font-size:18px;font-weight:700;color:var(--ok);min-height:24px}
+.log{font-size:14px;color:var(--dim);line-height:1.5;max-height:150px;overflow:hidden}
+.ctl{display:flex;gap:10px;flex-wrap:wrap}
+.say{width:min(1150px,100%);min-height:105px;margin-top:16px;font-size:25px;line-height:1.35;font-weight:600}
+.say small{display:block;font-size:18px;color:var(--dim);font-weight:400;margin-top:8px}
+.nav{display:flex;gap:12px;align-items:center;margin-top:12px;width:min(1150px,100%)}
+button{font:600 17px -apple-system,"Helvetica Neue",Arial,sans-serif;padding:11px 20px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer}
+button.go{background:var(--ink);color:#fff;border-color:var(--ink)}
+button:disabled{opacity:.35;cursor:default}
+.count{margin-left:auto;color:var(--dim);font-size:16px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<h1>Twenty deliveries, three vans</h1>
+<div class="sub">When each van does several stops, the order matters. Click Next, or use the arrow keys.</div>
+<div class="stage">
+  <div class="mapbox"><svg viewBox="0 0 1000 620" id="map"></svg></div>
+  <div class="side">
+    <div class="total" id="total"></div>
+    <div class="vans" id="vans"></div>
+    <div class="delta" id="delta"></div>
+    <div class="ctl" id="ctl" hidden><button id="run" class="go">Start improving</button><button id="esc" hidden>Shake it up and keep going</button></div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+<div class="say" id="say"></div>
+<div class="nav"><button id="back">Back</button><button id="next" class="go">Next</button><span class="count" id="count"></span></div>
+<script>
+// ---------- the problem: a warehouse, 20 shops, 3 vans that carry at most 8 deliveries each
+function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+var R = rng(11), P = [{x: 500, y: 320}];            // index 0 = warehouse; 1 px = 100 m
+while (P.length < 21) {
+  var p = {x: 60 + R() * 880, y: 50 + R() * 520};
+  if (P.every(function (q) { return Math.hypot(p.x - q.x, p.y - q.y) > 70; })) P.push(p);
+}
+var VANS = 3, CAP = 8, KMH = 40, COLORS = ["#2563eb", "#e07a00", "#7c3aed"], NAMES = ["Ana", "Ben", "Carla"];
+function d(a, b) { return Math.hypot(P[a].x - P[b].x, P[a].y - P[b].y) / 10; }        // km
+function rcost(r) { if (!r.length) return 0; var c = d(0, r[0]); for (var k = 1; k < r.length; k++) c += d(r[k - 1], r[k]); return c + d(r[r.length - 1], 0); }
+function mins(km) { return Math.round(km / KMH * 60); }
+function total(S) { return S.reduce(function (a, r) { return a + rcost(r); }, 0); }
+function clone(S) { return S.map(function (r) { return r.slice(); }); }
+
+// ---------- step 1: a quick first plan (each van, in turn, drives to the nearest shop nobody has taken)
+function greedy(trace) {
+  var S = [[], [], []], at = [0, 0, 0], free = []; for (var k = 1; k <= 20; k++) free.push(k);
+  var v = 0;
+  while (free.length) {
+    if (S[v].length < CAP) {
+      var best = free.reduce(function (a, s) { return d(at[v], s) < d(at[v], a) ? s : a; }, free[0]);
+      S[v].push(best); at[v] = best; free.splice(free.indexOf(best), 1);
+      if (trace) trace.push(clone(S));
+    }
+    v = (v + 1) % VANS;
+  }
+  return S;
+}
+// ---------- step 2: small changes
+function moves(S) {   // every improving move, with its saving in km
+  var out = [], base = S.map(rcost);
+  for (var a = 0; a < VANS; a++) {
+    var r = S[a];
+    for (var i = 0; i < r.length - 1; i++) for (var j = i + 1; j < r.length; j++) {        // reverse a piece of one route
+      var nr = r.slice(0, i).concat(r.slice(i, j + 1).reverse(), r.slice(j + 1));
+      out.push({type: "reverse", gain: base[a] - rcost(nr), a: a, nr: nr, stops: [r[i], r[j]]});
+    }
+    for (var b = 0; b < VANS; b++) {
+      if (a === b) continue;
+      for (var i2 = 0; i2 < r.length; i2++) {                                              // move one shop to another van
+        if (S[b].length < CAP) for (var j2 = 0; j2 <= S[b].length; j2++) {
+          var ra = r.slice(0, i2).concat(r.slice(i2 + 1)), rb = S[b].slice(0, j2).concat([r[i2]], S[b].slice(j2));
+          out.push({type: "move", gain: base[a] + base[b] - rcost(ra) - rcost(rb), a: a, b: b, na: ra, nb: rb, stops: [r[i2]]});
+        }
+        if (a < b) for (var j3 = 0; j3 < S[b].length; j3++) {                               // swap two shops between vans
+          var sa = r.slice(), sb = S[b].slice(), t = sa[i2]; sa[i2] = sb[j3]; sb[j3] = t;
+          out.push({type: "swap", gain: base[a] + base[b] - rcost(sa) - rcost(sb), a: a, b: b, na: sa, nb: sb, stops: [r[i2], S[b][j3]]});
+        }
+      }
+    }
+  }
+  return out.filter(function (m) { return m.gain > 1e-6; }).sort(function (x, y) { return y.gain - x.gain; });
+}
+function apply(S, m) { var T = clone(S); if (m.type === "reverse") T[m.a] = m.nr; else { T[m.a] = m.na; T[m.b] = m.nb; } return T; }
+function bestOf(S, type) { var ms = moves(S).filter(function (m) { return !type || m.type === type; }); return ms[0]; }
+
+// ---------- drawing
+var svg = document.getElementById("map");
+function draw(S, hl) {
+  var s = "<defs><pattern id='g' width='50' height='50' patternUnits='userSpaceOnUse'><path d='M50 0H0V50' fill='none' stroke='#efe9dd'/></pattern></defs><rect width='1000' height='620' fill='url(#g)'/>";
+  s += "<g transform='translate(860,595)'><path d='M0 0H100' stroke='#888' stroke-width='3'/><text x='0' y='-8' font-size='14' fill='#777'>10 km</text></g>";
+  (S || []).forEach(function (r, v) {
+    if (!r.length) return;
+    var pts = [0].concat(r, (hl && hl.open && hl.open[v]) ? [] : [0]);
+    s += "<polyline points='" + pts.map(function (k) { return P[k].x + "," + P[k].y; }).join(" ") + "' fill='none' stroke='" + COLORS[v] + "' stroke-width='" + (hl && hl.vans && hl.vans.indexOf(v) >= 0 ? 6 : 3.5) + "' stroke-linejoin='round' opacity='" + (hl && hl.vans && hl.vans.indexOf(v) < 0 ? .3 : .9) + "'/>";
+  });
+  (hl && hl.ghost || []).forEach(function (g) {
+    s += "<polyline points='" + g.pts.map(function (k) { return P[k].x + "," + P[k].y; }).join(" ") + "' fill='none' stroke='#d64545' stroke-width='3' stroke-dasharray='7 7' opacity='.8'/>";
+  });
+  for (var k = 1; k < P.length; k++) {
+    var hot = hl && hl.stops && hl.stops.indexOf(k) >= 0;
+    s += "<circle cx='" + P[k].x + "' cy='" + P[k].y + "' r='" + (hot ? 15 : 10) + "' fill='" + (hot ? "#ffd166" : "#fff") + "' stroke='#1d232c' stroke-width='2.5'/>";
+  }
+  s += "<rect x='" + (P[0].x - 20) + "' y='" + (P[0].y - 20) + "' width='40' height='40' rx='6' fill='#1d232c'/><text x='" + P[0].x + "' y='" + (P[0].y + 6) + "' font-size='16' fill='#fff' text-anchor='middle' font-weight='700'>W</text>";
+  svg.innerHTML = s;
+}
+function stats(S, label) {
+  if (!S) { document.getElementById("total").innerHTML = ""; document.getElementById("vans").innerHTML = ""; return; }
+  document.getElementById("total").innerHTML = mins(total(S)) + " min<small>" + (label || "total driving, all vans") + "</small>";
+  document.getElementById("vans").innerHTML = S.map(function (r, v) { return "<div><i style='background:" + COLORS[v] + "'></i>" + NAMES[v] + ": " + r.length + " stops, " + mins(rcost(r)) + " min</div>"; }).join("");
+}
+
+// ---------- the story
+var G = greedy(), TRACE = []; greedy(TRACE);
+var EX = {reverse: bestOf(G, "reverse"), move: bestOf(G, "move"), swap: bestOf(G, "swap")};
+function exHl(m) {
+  var after = apply(G, m), vans = m.type === "reverse" ? [m.a] : [m.a, m.b];
+  return {S: after, hl: {vans: vans, stops: m.stops, ghost: vans.map(function (v) { return {pts: [0].concat(G[v], [0])}; })}};
+}
+var STEPS = [
+  {k: "intro", t: "A warehouse (W), 20 shops, 3 vans. Each van can carry at most 8 deliveries.", s: "Goal: deliver to every shop with as little total driving as possible. Now a van does several stops, so the solver must also choose the ORDER."},
+  {k: "count", t: "How many plans? Just splitting 20 shops between 3 vans: about 3.5 billion ways. Then each van's stops can be ordered in millions of ways.", s: "Checking them all is impossible. So the solver works differently: build a quick plan, then improve it."},
+  {k: "greedy", t: "Step 1, a quick first plan: each van, in turn, drives to the nearest shop nobody has taken yet.", s: "Press Next to see the result. It takes a fraction of a second."},
+  {k: "greedyDone", t: "A complete plan. It works, but look at it: routes that zigzag and cross each other are wasted driving.", s: "Step 2 is to improve it with small changes. There are three kinds."},
+  {k: "reverse", t: "Change 1: reverse a piece of one van's route. Same stops, different order.", s: "Dashed red = before, solid = after. The yellow shops are where the piece starts and ends."},
+  {k: "move", t: "Change 2: move one shop from one van to another.", s: "The shop goes to the van that passes closer to it."},
+  {k: "swap", t: "Change 3: swap two shops between two vans.", s: "Each van gets the shop that fits its route better."},
+  {k: "run", t: "Now let the computer do it: try every small change, keep the best one, repeat. Thousands per second; here slowed down so you can watch.", s: "Press Start improving. Watch the total drop until no small change helps any more."},
+  {k: "stuck", t: "It stops when no single small change helps. That doesn't mean it's the best possible plan: it may be stuck.", s: "Like walking downhill in fog: you reach a dip, but maybe not the lowest valley. Press Shake it up: it shuffles a few shops, then improves again, and keeps the best plan ever seen."},
+  {k: "end", t: "That's how real routing solvers work: quick plan, small improvements, shake up, repeat.", s: "On big problems they usually can't PROVE the plan is the best, so they report how close it is, for example \"within 2 % of the best possible\". Google OR-Tools does exactly this, with van sizes, opening hours and driver hours as extra rules."}
+];
+var i = 0, cur = null, timer = null, best = null, shakes = [];
+function stop() { if (timer) { clearInterval(timer); timer = null; } }
+function render() {
+  stop();
+  var st = STEPS[i]; document.getElementById("ctl").hidden = !(st.k === "run" || st.k === "stuck");
+  document.getElementById("esc").hidden = st.k !== "stuck"; document.getElementById("run").hidden = st.k !== "run";
+  document.getElementById("delta").textContent = ""; document.getElementById("log").innerHTML = "";
+  if (st.k === "intro" || st.k === "count") { draw(null); stats(null); }
+  if (st.k === "greedy") {
+    var n = 0; draw(null); stats(null);
+    timer = setInterval(function () { if (n >= TRACE.length) { stop(); return; } draw(TRACE[n], {open: [1, 1, 1]}); stats(TRACE[n], "driving so far"); n++; }, 140);
+  }
+  if (st.k === "greedyDone") { cur = clone(G); draw(cur); stats(cur, "total driving, first plan"); }
+  if (st.k === "reverse" || st.k === "move" || st.k === "swap") {
+    var e = exHl(EX[st.k]); draw(e.S, e.hl); stats(e.S, "total driving after this one change");
+    document.getElementById("delta").textContent = "This change saves " + mins(EX[st.k].gain) + " min";
+  }
+  if (st.k === "run") { cur = clone(G); best = clone(G); shakes = []; draw(cur); stats(cur, "total driving, first plan"); }
+  if (st.k === "stuck") { if (!cur || moves(cur).length) { cur = localOpt(clone(G)); } best = clone(cur); draw(cur); stats(cur, "total driving, stuck here"); }
+  if (st.k === "end") { draw(best || cur || G); stats(best || cur || G, "best plan found"); document.getElementById("delta").textContent = "First plan " + mins(total(G)) + " min, now " + mins(total(best || cur || G)) + " min"; }
+  document.getElementById("say").innerHTML = st.t + "<small>" + st.s + "</small>";
+  document.getElementById("count").textContent = (i + 1) + " of " + STEPS.length;
+  document.getElementById("back").disabled = i === 0; document.getElementById("next").disabled = i === STEPS.length - 1;
+}
+function localOpt(S) { for (var g = 0; g < 500; g++) { var m = moves(S)[0]; if (!m) break; S = apply(S, m); } return S; }
+var LABEL = {reverse: "reversed a piece of " , move: "moved a shop to ", swap: "swapped shops between "};
+document.getElementById("run").onclick = function () {
+  stop(); cur = clone(G); var first = total(G), steps = 0;
+  timer = setInterval(function () {
+    var m = moves(cur)[0];
+    if (!m) { stop(); document.getElementById("delta").textContent = "No small change helps any more. Saved " + mins(first - total(cur)) + " min (" + Math.round(100 * (first - total(cur)) / first) + " %) in " + steps + " changes."; draw(cur); best = clone(cur); return; }
+    var before = clone(cur); cur = apply(cur, m); steps++;
+    var vans = m.type === "reverse" ? [m.a] : [m.a, m.b];
+    draw(cur, {vans: vans, stops: m.stops, ghost: vans.map(function (v) { return {pts: [0].concat(before[v], [0])}; })});
+    stats(cur, "total driving");
+    document.getElementById("delta").textContent = "-" + mins(m.gain) + " min";
+    var who = m.type === "reverse" ? NAMES[m.a] + "'s route" : (m.type === "move" ? NAMES[m.b] + "'s van" : NAMES[m.a] + " and " + NAMES[m.b]);
+    document.getElementById("log").innerHTML = steps + ". " + LABEL[m.type] + who + " (-" + mins(m.gain) + " min)<br>" + document.getElementById("log").innerHTML;
+  }, 650);
+};
+document.getElementById("esc").onclick = function () {
+  stop(); var r2 = rng(99 + shakes.length), rounds = 0, start = total(best);
+  timer = setInterval(function () {
+    if (rounds >= 12) { stop(); cur = clone(best); draw(cur); stats(cur, "best plan ever seen"); document.getElementById("delta").textContent = (total(best) < start - 1e-6 ? "Shaking found " + mins(start - total(best)) + " more minutes." : "No better plan found this time: the first dip was already very good.") ; return; }
+    var S = clone(best);
+    for (var k = 0; k < 5; k++) {                              // shake: move 5 random shops to random vans with room
+      var a = Math.floor(r2() * VANS); if (!S[a].length) continue;
+      var x = S[a].splice(Math.floor(r2() * S[a].length), 1)[0], b = Math.floor(r2() * VANS);
+      if (S[b].length >= CAP) b = a; S[b].splice(Math.floor(r2() * (S[b].length + 1)), 0, x);
+    }
+    S = localOpt(S); rounds++; shakes.push(total(S));
+    draw(S, {ghost: []}); stats(S, "after shake " + rounds + " of 12");
+    document.getElementById("log").innerHTML = "shake " + rounds + ": " + mins(total(S)) + " min" + (total(S) < total(best) - 1e-6 ? " (new best!)" : "") + "<br>" + document.getElementById("log").innerHTML;
+    if (total(S) < total(best) - 1e-6) best = S;
+  }, 900);
+};
+document.getElementById("next").onclick = function () { if (i < STEPS.length - 1) { i++; render(); } };
+document.getElementById("back").onclick = function () { if (i > 0) { i--; render(); } };
+window.addEventListener("keydown", function (e) { if (e.key === "ArrowRight") document.getElementById("next").onclick(); if (e.key === "ArrowLeft") document.getElementById("back").onclick(); });
+render();
+</script>
+</body>
+</html>

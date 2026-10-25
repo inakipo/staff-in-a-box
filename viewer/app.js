@@ -678,6 +678,10 @@
     var best = S.assign.best, intu = S.assign.intuitive;
     var h = '<div class="pv-title">Minutes to reach each task (rows: units, columns: tasks)</div><table class="heat"><thead><tr><th class="u"></th>';
     TASKS.forEach(function (t) { h += '<th>' + esc(t) + '</th>'; });
+    // the mission also names X6, but the first task list forgot it: show it as a faded "forgotten" column
+    var X6 = {}; (S.mission_check && S.mission_check.reach_x6 || []).forEach(function (r) { X6[r.unit] = r.min; });
+    var x6eta = S.mission_check ? S.mission_check.red_recce_x6_arrive : null;
+    h += '<th class="forgot">deny X6<span>forgotten</span></th>';
     h += '</tr></thead><tbody>';
     AUNITS.forEach(function (u) {
       h += '<tr><th class="u">' + u + '<span>' + esc(S.units[u].name) + '</span></th>';
@@ -691,11 +695,12 @@
         h += '<td class="' + (pick ? 'pick' : '') + '" style="background:' + heatColor(ready) + ';color:#fff"><b>' + ready + '</b><small>' + sub + '</small>' +
           (pick ? '<span class="tag">SOLVER</span>' : '') + (ip && !pick ? '<span class="itag">intuitive</span>' : '') + '</td>';
       });
+      h += '<td class="forgot"><b>' + (X6[u] != null ? X6[u] : '') + '</b><small>not in the task list</small></td>';
       h += '</tr>';
     });
     h += '</tbody></table>';
     var st = planStats(best.assignment);
-    h += '<div class="pv-foot">Status <b>' + best.status + '</b> in <b>' + best.wall_ms + ' ms</b>. Latest arrival <b>H+' + best.last + '</b>, total <b>' + best.total + '</b> unit-minutes. White outline = the solver’s choice; amber tag = the intuitive plan where it differs. Hatched = forbidden by a rule.</div>';
+    h += '<div class="pv-foot">Status <b>' + best.status + '</b> in <b>' + best.wall_ms + ' ms</b>. Latest arrival <b>H+' + best.last + '</b>, total <b>' + best.total + '</b> unit-minutes. White outline = the solver’s choice; amber tag = the intuitive plan where it differs. Hatched = forbidden by a rule. Dashed column = a bridge the mission names but this first task list forgot: the solver never saw it' + (x6eta ? ' (Red recce reaches X6 at minute ' + x6eta + ')' : '') + '.</div>';
     return h;
   }
   function gantt(plan, title, color, hl) {

@@ -40,6 +40,7 @@ button:disabled{opacity:.35;cursor:default}
     <div class="total" id="total"></div>
     <div class="vans" id="vans"></div>
     <div class="delta" id="delta"></div>
+    <div class="ctl" id="toggle" hidden><button id="m_before" onclick="setMode('before')">Before</button><button id="m_after" onclick="setMode('after')">After</button><button id="m_both" onclick="setMode('both')">What changed</button></div>
     <div class="ctl" id="ctl" hidden><button id="run" class="go">Start improving</button><button id="esc" hidden>Shake it up and keep going</button></div>
     <div class="log" id="log"></div>
   </div>
@@ -129,6 +130,50 @@ function stats(S, label) {
   document.getElementById("vans").innerHTML = S.map(function (r, v) { return "<div><i style='background:" + COLORS[v] + "'></i>" + NAMES[v] + ": " + r.length + " stops, " + mins(rcost(r)) + " min</div>"; }).join("");
 }
 
+// ---------- "what changed" drawing for one example change: letters on stops, removed links red, added links green
+function edgesOf(r) { var out = []; for (var k = 1; k < r.length; k++) out.push([r[k - 1], r[k]]); return out; }
+function key(e) { return Math.min(e[0], e[1]) + "-" + Math.max(e[0], e[1]); }
+function drawDiff(m, mode) {
+  var vans = m.type === "reverse" ? [m.a] : [m.a, m.b], after = apply(G, m), L = {}, letter = 0;
+  vans.forEach(function (v) { G[v].forEach(function (k) { if (!(k in L)) L[k] = String.fromCharCode(65 + letter++); }); });
+  var s = "<defs><pattern id='g' width='50' height='50' patternUnits='userSpaceOnUse'><path d='M50 0H0V50' fill='none' stroke='#efe9dd'/></pattern></defs><rect width='1000' height='620' fill='url(#g)'/>";
+  G.forEach(function (r, v) { if (vans.indexOf(v) < 0) s += "<polyline points='" + [0].concat(r, [0]).map(function (k) { return P[k].x + "," + P[k].y; }).join(" ") + "' fill='none' stroke='" + COLORS[v] + "' stroke-width='2' opacity='.15'/>"; });
+  var rem = [], add = [], keep = [];
+  vans.forEach(function (v) {
+    var eb = edgesOf([0].concat(G[v], [0])), ea = edgesOf([0].concat(after[v], [0]));
+    var kb = eb.map(key), ka = ea.map(key);
+    eb.forEach(function (e) { (ka.indexOf(key(e)) < 0 ? rem : keep).push({e: e, v: v}); });
+    ea.forEach(function (e) { if (kb.indexOf(key(e)) < 0) add.push({e: e, v: v}); });
+  });
+  // the same road link removed from one van and added to another is not a change: drop both
+  rem = rem.filter(function (o) { var j = -1; add.forEach(function (x, k) { if (j < 0 && key(x.e) === key(o.e)) j = k; }); if (j >= 0) { keep.push(add[j]); add.splice(j, 1); return false; } return true; });
+  function seg(o, col, w, dash, lab) {
+    var a = P[o.e[0]], b = P[o.e[1]], f = col === "#d64545" ? 0.66 : 0.4, mx = a.x + (b.x - a.x) * f, my = a.y + (b.y - a.y) * f;
+    var t = "<line x1='" + a.x + "' y1='" + a.y + "' x2='" + b.x + "' y2='" + b.y + "' stroke='" + col + "' stroke-width='" + w + "'" + (dash ? " stroke-dasharray='10 8'" : "") + " stroke-linecap='round'/>";
+    if (lab) t += "<rect x='" + (mx - 30) + "' y='" + (my - 15) + "' width='60' height='26' rx='7' fill='" + col + "'/><text x='" + mx + "' y='" + (my + 4) + "' font-size='15' font-weight='700' fill='#fff' text-anchor='middle'>" + mins(d(o.e[0], o.e[1])) + " min</text>";
+    return t;
+  }
+  keep.forEach(function (o) { s += seg(o, COLORS[o.v], 3.5, false, false); });
+  if (mode !== "after") rem.forEach(function (o) { s += seg(o, "#d64545", 6, mode === "both", true); });
+  if (mode !== "before") add.forEach(function (o) { s += seg(o, "#1a9b62", 7, false, true); });
+  for (var k = 1; k < P.length; k++) {
+    var mine = k in L;
+    s += "<circle cx='" + P[k].x + "' cy='" + P[k].y + "' r='" + (mine ? 17 : 8) + "' fill='" + (mine ? "#fff" : "#f2efe8") + "' stroke='" + (mine ? "#1d232c" : "#c9c2b3") + "' stroke-width='" + (mine ? 3 : 2) + "'/>";
+    if (mine) s += "<text x='" + P[k].x + "' y='" + (P[k].y + 6) + "' font-size='17' font-weight='800' text-anchor='middle'>" + L[k] + "</text>";
+  }
+  s += "<rect x='" + (P[0].x - 20) + "' y='" + (P[0].y - 20) + "' width='40' height='40' rx='6' fill='#1d232c'/><text x='" + P[0].x + "' y='" + (P[0].y + 6) + "' font-size='16' fill='#fff' text-anchor='middle' font-weight='700'>W</text>";
+  svg.innerHTML = s;
+  var route = function (r) { return ["W"].concat(r.map(function (k) { return L[k]; }), ["W"]).join(" &rarr; "); };
+  var html = vans.map(function (v) { return "<div style='margin:8px 0'><b style='color:" + COLORS[v] + "'>" + NAMES[v] + "</b><br>before: " + route(G[v]) + "<br>after: " + route(after[v]) + "</div>"; }).join("");
+  var sum = function (l) { return l.reduce(function (a, o) { return a + d(o.e[0], o.e[1]); }, 0); };
+  html += "<div style='margin-top:10px;color:#d64545'><b>removed:</b> " + rem.map(function (o) { return lab(o.e) + " " + mins(d(o.e[0], o.e[1])); }).join(", ") + " = " + mins(sum(rem)) + " min</div>";
+  html += "<div style='color:#1a9b62'><b>added:</b> " + add.map(function (o) { return lab(o.e) + " " + mins(d(o.e[0], o.e[1])); }).join(", ") + " = " + mins(sum(add)) + " min</div>";
+  function lab(e) { var n = function (k) { return k === 0 ? "W" : L[k]; }; return n(e[0]) + "&ndash;" + n(e[1]); }
+  document.getElementById("log").innerHTML = html;
+  document.getElementById("log").style.cssText = "font-size:16px;color:#1d232c;max-height:none";
+  stats(mode === "before" ? G : after, mode === "before" ? "total driving before" : "total driving after this one change");
+}
+
 // ---------- the story
 var G = greedy(), TRACE = []; greedy(TRACE);
 var EX = {reverse: bestOf(G, "reverse"), move: bestOf(G, "move"), swap: bestOf(G, "swap")};
@@ -141,13 +186,15 @@ var STEPS = [
   {k: "count", t: "How many plans? Just splitting 20 shops between 3 vans: about 3.5 billion ways. Then each van's stops can be ordered in millions of ways.", s: "Checking them all is impossible. So the solver works differently: build a quick plan, then improve it."},
   {k: "greedy", t: "Step 1, a quick first plan: each van, in turn, drives to the nearest shop nobody has taken yet.", s: "Press Next to see the result. It takes a fraction of a second."},
   {k: "greedyDone", t: "A complete plan. It works, but look at it: routes that zigzag and cross each other are wasted driving.", s: "Step 2 is to improve it with small changes. There are three kinds."},
-  {k: "reverse", t: "Change 1: reverse a piece of one van's route. Same stops, different order.", s: "Dashed red = before, solid = after. The yellow shops are where the piece starts and ends."},
-  {k: "move", t: "Change 2: move one shop from one van to another.", s: "The shop goes to the van that passes closer to it."},
-  {k: "swap", t: "Change 3: swap two shops between two vans.", s: "Each van gets the shop that fits its route better."},
+  {k: "reverse", t: "Change 1: do a piece of one route in reverse order. Same shops, different order.", s: "Carla's shops have letters. Red = road links removed, green = links added, everything else stays. Use Before / After to flip between the two."},
+  {k: "move", t: "Change 2: move one shop from one van to another.", s: "The shop goes to the van that passes closer to it. Red = links removed, green = links added."},
+  {k: "swap", t: "Change 3: swap two shops between two vans.", s: "Each van gets the shop that fits its route better. Red = links removed, green = links added."},
   {k: "run", t: "Now let the computer do it: try every small change, keep the best one, repeat. Thousands per second; here slowed down so you can watch.", s: "Press Start improving. Watch the total drop until no small change helps any more."},
   {k: "stuck", t: "It stops when no single small change helps. That doesn't mean it's the best possible plan: it may be stuck.", s: "Like walking downhill in fog: you reach a dip, but maybe not the lowest valley. Press Shake it up: it shuffles a few shops, then improves again, and keeps the best plan ever seen."},
   {k: "end", t: "That's how real routing solvers work: quick plan, small improvements, shake up, repeat.", s: "On big problems they usually can't PROVE the plan is the best, so they report how close it is, for example \"within 2 % of the best possible\". Google OR-Tools does exactly this, with van sizes, opening hours and driver hours as extra rules."}
 ];
+var mode = "both";
+function setMode(m) { mode = m; ["before", "after", "both"].forEach(function (x) { document.getElementById("m_" + x).classList.toggle("go", x === m); }); var k = STEPS[i].k; if (EX[k]) drawDiff(EX[k], m); }
 var i = 0, cur = null, timer = null, best = null, shakes = [];
 function stop() { if (timer) { clearInterval(timer); timer = null; } }
 function render() {
@@ -161,8 +208,10 @@ function render() {
     timer = setInterval(function () { if (n >= TRACE.length) { stop(); return; } draw(TRACE[n], {open: [1, 1, 1]}); stats(TRACE[n], "driving so far"); n++; }, 140);
   }
   if (st.k === "greedyDone") { cur = clone(G); draw(cur); stats(cur, "total driving, first plan"); }
+  document.getElementById("toggle").hidden = !(st.k === "reverse" || st.k === "move" || st.k === "swap");
+  document.getElementById("log").style.cssText = "";
   if (st.k === "reverse" || st.k === "move" || st.k === "swap") {
-    var e = exHl(EX[st.k]); draw(e.S, e.hl); stats(e.S, "total driving after this one change");
+    mode = "both"; drawDiff(EX[st.k], mode); setMode("both");
     document.getElementById("delta").textContent = "This change saves " + mins(EX[st.k].gain) + " min";
   }
   if (st.k === "run") { cur = clone(G); best = clone(G); shakes = []; draw(cur); stats(cur, "total driving, first plan"); }

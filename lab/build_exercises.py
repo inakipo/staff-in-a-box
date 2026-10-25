@@ -1,4 +1,4 @@
-"""The six lab exercises: content, starter code, tests, hints, reference solutions, knobs and interview questions.
+"""The six lab exercises: content, starter code, tests, hints, reference solutions, knobs and explain-back questions.
 
 Running this file VERIFIES every exercise against the real lab data (each solution passes its tests, each skeleton
 fails them) and then writes lab/exercises.js for the page. The same PRELUDE runs in the browser (Pyodide)."""

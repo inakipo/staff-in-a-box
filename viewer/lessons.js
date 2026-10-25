@@ -100,7 +100,7 @@ window.LESSONS = [
   {
     id: "end", title: "The model drafts; the maths decides", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "units", "tracks"], camera: "overview" },
     plain: "A language model is still useful at the edges: reading messy radio, understanding intent, writing the order, explaining the result. But the decisions you just saw are made by methods that are exact, fast, and explainable.",
-    why: "That is what a headquarters can trust, and what you can defend line by line in an interview.",
+    why: "That is what a headquarters can trust, and what you can defend line by line in front of a commander.",
     tech: "Repo: staff-in-a-box (sib/roads, terrain, sim, reports, fusion, assign, validate, montecarlo, export). Everything reruns from scratch in about 6 seconds."
   }
 ];

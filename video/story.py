@@ -86,7 +86,7 @@ SEG = [
     dict(ch="Staff in a box", lesson="end", p=(0, 0.6), cap="The model drafts. The maths decides.",
          text="That is the whole engine. Routes, the enemy picture, the plan, the bad luck test and the missing bridge were all calculated: "
               "exact, fast, and explainable line by line. An AI model is useful at the edges, reading radio messages and writing the order. "
-              "But the decisions come from maths you can defend in an interview."),
+              "But the decisions come from maths you can defend, line by line."),
 ]
 
 

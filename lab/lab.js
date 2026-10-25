@@ -537,7 +537,7 @@ function renderPage() {
     </section>
 
     <section class="sec" id="sec-explain">
-      <div class="sec-h"><span class="num">4</span><h2>Explain it back</h2><span class="sub">Say it as you would in the interview. Then compare.</span></div>
+      <div class="sec-h"><span class="num">4</span><h2>Explain it back</h2><span class="sub">Say it out loud, then write it. Then compare.</span></div>
       <div class="explainbox" id="explain"></div>
     </section>
 
@@ -1459,13 +1459,13 @@ function renderNumbers() {
 function renderExplain() {
   const i = S.cur; const ex = EXS[i]; const st = S.ex[i]; const host = $('#explain');
   const got = st.ticks.filter(Boolean).length; const n = ex.interview.strong.length;
-  host.innerHTML = `<div class="iq"><div class="ik">Interview question</div><blockquote>${esc(ex.interview.q)}</blockquote>
+  host.innerHTML = `<div class="iq"><div class="ik">Explain it back</div><blockquote>${esc(ex.interview.q)}</blockquote>
       <textarea id="ans" placeholder="Answer out loud first, then write it here. Three or four sentences: the idea, why it works, what it costs, when it breaks.">${esc(st.explain)}</textarea>
       <div class="irow"><button class="btn primary" id="cmp">${st.strongShown ? 'Strong answer shown' : 'Compare with a strong answer'}</button>
       <button class="btn" id="copyans">${ICON.copy} Copy my answer</button><span class="wc" id="wc">${wordCount(st.explain)} words</span></div></div>
     <div class="strong ${st.strongShown ? '' : 'closed'}" id="strong">${st.strongShown ? `<div class="sk"><span>A strong answer covers</span><span><b>${got}</b> of ${n} covered</span></div>
       <ul class="slist">${ex.interview.strong.map((s, k) => `<li class="${st.ticks[k] ? 'got' : ''}"><label style="animation-delay:${k * 60}ms"><input type="checkbox" data-t="${k}" ${st.ticks[k] ? 'checked' : ''}><span>${esc(s)}</span></label></li>`).join('')}</ul>
-      <p class="kmeta" style="margin-top:12px">Tick the points your answer really made. Be strict: the interviewer will be.</p>`
+      <p class="kmeta" style="margin-top:12px">Tick the points your answer really made. Be strict with yourself.</p>`
       : `<div style="font-size:28px;color:#3a4a5e">?</div><div>Write your answer first.<br>Then reveal what a strong answer covers and tick what you got.</div>`}</div>`;
   const ta = $('#ans');
   const persist = debounce(() => { save(i, 'explain'); renderProgress(); renderNav(); renderStepper(); }, 400);

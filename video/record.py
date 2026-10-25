@@ -15,7 +15,7 @@ AUDIO = Path(sys.argv[1])
 OUT = HERE / "story_out"
 OUT.mkdir(exist_ok=True)
 FPS = 15
-URL = "file:///Users/inakipoveda/Desktop/staff-in-a-box/viewer/index.html"
+URL = (HERE.parent / "viewer" / "index.html").resolve().as_uri()
 PLACES = {"camp_mailly": (48.665, 4.213), "vitry": (48.725, 4.585), "sommesous": (48.737, 4.203), "arcis": (48.535, 4.141),
           "brienne": (48.393, 4.526), "ramerupt": (48.515, 4.296)}
 NAMES = {"camp_mailly": "Camp de Mailly", "vitry": "Vitry-le-François", "sommesous": "Sommesous (armour)"}

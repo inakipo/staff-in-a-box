@@ -58,7 +58,7 @@ window.LESSONS = [
   {
     id: "assign", title: "Optimisation: who does what", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "units", "assign-arrows"], panel: "assign-table", camera: "overview" },
     plain: "Four tasks, four fighting units. The solver tries every combination that follows the rules and returns the one where the last unit arrives earliest. It answers in {{assign.best.wall_ms}} ms and proves no better plan exists.",
-    why: "Rules a human applies by habit become explicit: recce screens and does not hold ground, every task gets exactly one unit, nobody does two jobs, and every unit keeps 20 % fuel. The brigade also has an engineer company and a logistics battalion at the camp; this first plan only gives tasks to the four fighting units.",
+    why: "Rules a human applies by habit become explicit: recce screens and does not hold ground, every task gets exactly one unit, nobody does two jobs, and every unit keeps 20 % fuel. The engineer company (bottom row) could block X5 by blowing the bridge, but with 20 minutes to rig the charges it is ready at minute 98, so the faster battalion gets the job and the engineers stay at the camp.",
     tech: "CP-SAT model: a yes/no variable per (unit, task); ExactlyOne per task; AtMostOne per unit; ineligible pairs fixed to 0; minimise 1000 x latest arrival + total minutes. Single-threaded so the answer never changes. Status OPTIMAL = proof of optimality."
   },
   {
@@ -83,7 +83,7 @@ window.LESSONS = [
     id: "hole", title: "The hole in the plan", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "units", "routes"], panel: "mission", anim: "play-truth", camera: "brienne" },
     plain: "The mission says: stop Red crossing at X5 and X6. The first plan only covered X5. Red's recce company drives straight to X6 and crosses at H+{{mission.recce_x6}}, unseen and unopposed. Can any Blue unit get there first? The fastest is our own recce, 2 minutes ahead, and recce is not allowed to hold ground.",
     why: "A real staff must catch this in mission analysis and go back to the commander. Here the engine caught it. The first verdict was 'infeasible, short by 17 minutes', but that came from a bug: the solver and the validator each had their own copy of the race rule, and the copies had drifted apart.",
-    tech: "The way out uses a unit the first plan left idle: the engineer company can deny a bridge by demolition, if its charges are ready (arrival + 20 min) before Red arrives. Fix for the bug: one function, race_ok(), used by both. A 40-vehicle battalion arriving 17 minutes after a 6-vehicle recce company still clears the bridge by attacking at 6.7:1 (needs 2:1). With one shared rule the solver finds a plan with no head start."
+    tech: "The way out uses the engineers, who sat idle at the camp in the first plan: they can deny a bridge by demolition, if its charges are ready (arrival + 20 min) before Red arrives. Fix for the bug: one function, race_ok(), used by both. A 40-vehicle battalion arriving 17 minutes after a 6-vehicle recce company still clears the bridge by attacking at 6.7:1 (needs 2:1). With one shared rule the solver finds a plan with no head start."
   },
   {
     id: "options", title: "Four ways out, measured", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "option-arrows"], panel: "options", camera: "overview" },

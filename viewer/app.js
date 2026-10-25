@@ -686,8 +686,9 @@
         if (!r) { h += '<td></td>'; return; }
         if (!r.eligible) { h += '<td class="no"><b>' + r.min + '</b><small>' + esc(reasonFor(r)) + '</small></td>'; return; }
         var pick = best.assignment[u] === t, ip = intu[u] === t;
-        var sub = r.reason && r.reason !== "not this unit's job" ? esc(r.reason) : Math.round(r.fuel_left * 100) + ' % fuel left';
-        h += '<td class="' + (pick ? 'pick' : '') + '" style="background:' + heatColor(r.min) + ';color:#fff"><b>' + r.min + '</b><small>' + sub + '</small>' +
+        var ready = r.ready != null ? r.ready : r.min, rig = ready > r.min;   // engineers need time to rig charges after arriving
+        var sub = r.reason && r.reason !== "not this unit's job" ? esc(r.reason) : (rig ? r.min + ' drive + ' + (ready - r.min) + ' to rig' : Math.round(r.fuel_left * 100) + ' % fuel left');
+        h += '<td class="' + (pick ? 'pick' : '') + '" style="background:' + heatColor(ready) + ';color:#fff"><b>' + ready + '</b><small>' + sub + '</small>' +
           (pick ? '<span class="tag">SOLVER</span>' : '') + (ip && !pick ? '<span class="itag">intuitive</span>' : '') + '</td>';
       });
       h += '</tr>';

@@ -124,14 +124,18 @@ def build():
         "mission": s["mission"], "intent": s["intent"],
         "dijkstra": {"normal": _dijkstra_ripple(P["camp_mailly"]["pos"], south, 35),
                      "blown": _dijkstra_ripple(P["camp_mailly"]["pos"], south, 35, blown=[X["X1"]["pos"], X["X2"]["pos"]])},
-        "truth": {u: {"target": v["target"], "depart": v["depart"], "arrive": v["arrive"], "km": v["km"], "fuel_l": v["fuel_l"],
-                      "track": [[t, R5(a), R5(b)] for t, a, b in v["track"]]} for u, v in truth.items()},
+        "truth": {**{u: {"target": v["target"], "depart": v["depart"], "arrive": v["arrive"], "km": v["km"], "fuel_l": v["fuel_l"],
+                         "track": [[t, R5(a), R5(b)] for t, a, b in v["track"]]} for u, v in truth.items()},
+                  # units without a task stay at their start point, so they are still visible on the map
+                  **{u["id"]: {"target": u["start"], "depart": 0, "arrive": 0, "km": 0, "fuel_l": 0, "idle": True,
+                               "track": [[t, R5(P[u["start"]]["pos"][0]), R5(P[u["start"]]["pos"][1])] for t in range(0, 361, 2)]}
+                     for u in s["blue"] if u["id"] not in truth}},
         "reports": rep, "fusion": {"snapshots": snaps, "log": flog,
                                    "params": {"gate_km": fusion.GATE_KM, "gate_km_per_10min": fusion.GATE_KM_PER_10MIN, "gate_max_km": fusion.GATE_MAX_KM,
                                               "max_kmh": fusion.MAX_KMH, "alpha": fusion.ALPHA, "beta": fusion.BETA, "coast_min": fusion.COAST_MIN,
                                               "merge_km": fusion.MERGE_KM, "half_life_min": fusion.HALF_LIFE_MIN}},
         "assign": {"best": best, "why": why, "intuitive": intuitive,
-                   "table": [{"unit": u, "task": k, **v} for (u, k), v in assign.table(drop=first).items() if u != "B-ENG"]},
+                   "table": [{"unit": u, "task": k, **v} for (u, k), v in assign.table(drop=first).items()]},
         "validate": validate.check(plan, sim.run(plan, tracks=False)),
         "montecarlo": mc,
         "mission_check": {

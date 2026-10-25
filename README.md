@@ -67,7 +67,7 @@ open viewer/index.html                      # 17-step 3D explainer (Three.js)
 
 ## Not modelled yet
 
-Off-road movement, communications loss, enemy deception and morale. Prediction along roads instead of straight lines,
+Voice: messages start as text, so speech-to-text over a noisy radio channel (and its misheard numbers) is not modelled yet. Off-road movement, communications loss, enemy deception and morale. Prediction along roads instead of straight lines,
 and re-planning from the current picture when a unit is late, come next.
 
 ## Data

@@ -5,3 +5,5 @@ __pycache__/
 viewer/shots/
 lab/labdata.js
 lab/shots/
+.mlx/
+data/radio/

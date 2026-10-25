@@ -7,3 +7,4 @@ lab/labdata.js
 lab/shots/
 .mlx/
 data/radio/
+.DS_Store

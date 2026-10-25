@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the Solver Thinks</title>
+<style>
+:root{--bg:#f6f3ec;--ink:#1d232c;--dim:#6b7280;--line:#d8d2c4;--on:#2563eb;--bad:#d64545;--ok:#1a9b62;--card:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px}
+h1{font-size:30px;margin-bottom:6px}
+.sub{color:var(--dim);font-size:17px;margin-bottom:18px}
+.stage{width:min(1000px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px;display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start;min-height:400px}
+table{border-collapse:separate;border-spacing:8px}
+th{font-size:18px;color:var(--dim);font-weight:600;padding:4px 10px}
+th.row{text-align:right}
+td{width:120px;height:72px;text-align:center;font-size:28px;font-weight:700;border-radius:14px;border:3px solid var(--line);background:#fff;transition:all .4s;position:relative}
+td small{display:block;font-size:13px;font-weight:600;color:var(--dim)}
+td.on{background:var(--on);color:#fff;border-color:var(--on)}td.on small{color:#dbe6ff}
+td.off{background:#eeeae1;color:#b9b3a6;border-color:#eeeae1}
+td.cut{background:#fde8e8;color:var(--bad);border-color:var(--bad);text-decoration:line-through}
+td.cut small{text-decoration:none}
+.side{flex:1;min-width:260px;font-size:19px;line-height:1.5}
+.best{font-size:22px;font-weight:700;margin-bottom:12px}
+.best b{color:var(--ok)}
+.plans{font-family:"SF Mono",Menlo,monospace;font-size:15px;line-height:1.7}
+.plans div{padding:2px 8px;border-radius:6px}
+.plans .won{background:#dcf1e6}.plans .lost{color:var(--bad);text-decoration:line-through}.plans .now{background:#e6eefc}
+.say{width:min(1000px,100%);min-height:110px;margin-top:18px;font-size:26px;line-height:1.35;font-weight:600}
+.say small{display:block;font-size:18px;color:var(--dim);font-weight:400;margin-top:8px}
+.nav{display:flex;gap:12px;align-items:center;margin-top:14px;width:min(1000px,100%)}
+button{font:600 18px -apple-system,"Helvetica Neue",Arial,sans-serif;padding:12px 22px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer}
+button.go{background:var(--ink);color:#fff;border-color:var(--ink)}
+button:disabled{opacity:.35;cursor:default}
+.count{margin-left:auto;color:var(--dim);font-size:16px}
+</style>
+</head>
+<body>
+<h1>How the solver thinks</h1>
+<div class="sub">Three drivers, three deliveries. Who does which? Click Next, or use the arrow keys.</div>
+<div class="stage">
+  <table id="t"></table>
+  <div class="side"><div class="best" id="best"></div><div class="plans" id="plans"></div></div>
+</div>
+<div class="say" id="say"></div>
+<div class="nav"><button id="back">Back</button><button id="next" class="go">Next</button><span class="count" id="count"></span></div>
+<script>
+var D = ["Ana", "Ben", "Carla"], J = ["Madrid", "Toledo", "Segovia"];
+var M = [[20, 60, 70], [25, 50, 90], [30, 80, 120]];
+// cell states per step: key "r,c" -> on | off | cut
+function st(o) { return o || {}; }
+var STEPS = [
+  {cells: {}, t: "Three drivers, three deliveries. The numbers are minutes: how long each driver needs for each delivery.",
+   s: "Carla has the slow van. Goal: the LAST delivery should arrive as early as possible."},
+  {cells: {}, small: true, t: "The computer sees each box as a switch. On = \"this driver does this delivery\".",
+   s: "Two rules: each delivery gets exactly one driver, and nobody does two deliveries."},
+  {cells: {}, plans: "all", t: "There are only 6 ways to do it here. With 12 drivers there would be 479 million.",
+   s: "So the solver never tries them all. It guesses, and throws away whole groups of bad plans at once. Watch."},
+  {cells: {"0,0": "on", "0,1": "off", "0,2": "off", "1,0": "off", "2,0": "off"}, t: "Guess 1: Ana does Madrid (20 min).",
+   s: "Immediately, the rules switch off Ana's other boxes and the other Madrid boxes. One guess removes lots of options. This is called propagation."},
+  {cells: {"0,0": "on", "0,1": "off", "0,2": "off", "1,0": "off", "2,0": "off", "1,1": "on", "1,2": "off", "2,1": "off", "2,2": "on"},
+   best: 120, plans: [0], t: "Then Ben does Toledo, and only Segovia is left for Carla. A complete plan.",
+   s: "The last delivery arrives at minute 120 (Carla to Segovia). Best plan so far: 120."},
+  {cells: {"2,0": "on", "0,0": "off", "1,0": "off", "2,1": "off", "2,2": "off"}, best: 120, plans: [0], t: "Go back and try something else: Carla does Madrid (30 min).",
+   s: "Again the rules switch off the boxes that are now impossible."},
+  {cells: {"2,0": "on", "0,0": "off", "1,0": "off", "2,1": "off", "2,2": "off", "1,1": "on", "0,1": "off", "1,2": "off", "0,2": "on"},
+   best: 70, plans: [0, 1], t: "Ben does Toledo (50), Ana does Segovia (70). The last delivery arrives at minute 70.",
+   s: "Much better. Best plan so far: 70."},
+  {cells: {"2,2": "cut", "1,2": "cut", "2,1": "cut"}, best: 70, plans: [0, 1], cutnote: true,
+   t: "Now the clever part: any plan using one of the red boxes takes more than 70 minutes.",
+   s: "Carla to Segovia is 120, Ben to Segovia is 90, Carla to Toledo is 80: all above 70. So every plan containing them is thrown away, without even building it. This is called bounding."},
+  {cells: {"2,2": "cut", "1,2": "cut", "2,1": "cut"}, best: 70, plans: "final", t: "What survives? Only plans that avoid every red box: and the only one left is the 70 we already have.",
+   s: "Every possible plan has been either checked or thrown away for a reason. Nothing can beat 70."},
+  {cells: {"2,0": "on", "1,1": "on", "0,2": "on", "0,0": "off", "0,1": "off", "1,0": "off", "1,2": "off", "2,1": "off", "2,2": "off"}, best: 70, plans: "final",
+   t: "That's what OPTIMAL means: \"I didn't just find a good plan, I proved nothing is better.\"",
+   s: "Notice the answer: the slow van does the closest job. That frees the faster drivers for the far ones."},
+  {cells: {"2,0": "on", "1,1": "on", "0,2": "on", "0,0": "off", "0,1": "off", "1,0": "off", "1,2": "off", "2,1": "off", "2,2": "off"}, best: 70, plans: "final",
+   t: "On the map it's exactly the same: 4 units, 4 bridges, plus rules like \"recce can't hold a bridge\".",
+   s: "The armour is the slow van: it gets the nearest bridge. The solver checked everything in about 20 milliseconds."}
+];
+var ALLPLANS = [
+  {p: "Ana-Madrid, Ben-Toledo, Carla-Segovia", last: 120},
+  {p: "Carla-Madrid, Ben-Toledo, Ana-Segovia", last: 70},
+  {p: "Ben-Madrid, Ana-Toledo, Carla-Segovia", last: 120},
+  {p: "Ana-Madrid, Carla-Toledo, Ben-Segovia", last: 90},
+  {p: "Ben-Madrid, Carla-Toledo, Ana-Segovia", last: 80},
+  {p: "Carla-Madrid, Ana-Toledo, Ben-Segovia", last: 90}];
+var i = 0;
+function render() {
+  var s = STEPS[i], h = "<tr><th></th>" + J.map(function (j) { return "<th>" + j + "</th>"; }).join("") + "</tr>";
+  for (var r = 0; r < 3; r++) {
+    h += "<tr><th class='row'>" + D[r] + (r === 2 ? "<br><span style='font-size:13px;font-weight:400'>slow van</span>" : "") + "</th>";
+    for (var c = 0; c < 3; c++) {
+      var cls = s.cells[r + "," + c] || "";
+      h += "<td class='" + cls + "'>" + M[r][c] + "<small>" + (s.small && !cls ? "switch off" : (cls === "on" ? "switch ON" : cls === "cut" ? "over 70: thrown away" : "min")) + "</small></td>";
+    }
+    h += "</tr>";
+  }
+  document.getElementById("t").innerHTML = h;
+  document.getElementById("best").innerHTML = s.best ? "Best plan so far: last delivery at <b>minute " + s.best + "</b>" : "";
+  var pl = "";
+  if (s.plans === "all") pl = ALLPLANS.map(function (p) { return "<div>" + p.p + "</div>"; }).join("");
+  else if (s.plans === "final") pl = ALLPLANS.map(function (p) { return "<div class='" + (p.last === 70 ? "won" : "lost") + "'>" + p.p + " : " + p.last + "</div>"; }).join("");
+  else if (s.plans) pl = s.plans.map(function (k) { return "<div class='" + (ALLPLANS[k].last === s.best ? "now" : "") + "'>" + ALLPLANS[k].p + " : " + ALLPLANS[k].last + "</div>"; }).join("");
+  document.getElementById("plans").innerHTML = pl;
+  document.getElementById("say").innerHTML = s.t + "<small>" + s.s + "</small>";
+  document.getElementById("count").textContent = (i + 1) + " of " + STEPS.length;
+  document.getElementById("back").disabled = i === 0;
+  document.getElementById("next").disabled = i === STEPS.length - 1;
+}
+document.getElementById("next").onclick = function () { if (i < STEPS.length - 1) { i++; render(); } };
+document.getElementById("back").onclick = function () { if (i > 0) { i--; render(); } };
+window.addEventListener("keydown", function (e) { if (e.key === "ArrowRight") document.getElementById("next").onclick(); if (e.key === "ArrowLeft") document.getElementById("back").onclick(); });
+render();
+</script>
+</body>
+</html>

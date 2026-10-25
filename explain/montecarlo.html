@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rolling the Dice</title>
+<style>
+:root{--bg:#f6f3ec;--ink:#1d232c;--dim:#6b7280;--line:#d8d2c4;--blue:#2563eb;--red:#d64545;--ok:#1a9b62;--card:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px}
+h1{font-size:30px;margin-bottom:6px}
+.sub{color:var(--dim);font-size:17px;margin-bottom:18px}
+.stage{width:min(1100px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;gap:30px;flex-wrap:wrap;min-height:470px}
+.left{flex:1;min-width:300px;display:flex;flex-direction:column;gap:16px}
+.race{font-size:18px}
+.lane{display:flex;align-items:center;gap:10px;margin:10px 0}
+.lane span{width:60px;font-weight:700}
+.bar{height:26px;border-radius:7px;transition:width .5s}
+.lane em{font-style:normal;font-weight:700;font-size:20px}
+.verdict{font-size:22px;font-weight:800;margin-top:6px}
+.dice{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.die{border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:15px;line-height:1.35}
+.die b{display:block;font-size:22px;margin-top:4px}
+.die.hot{border-color:var(--ink)}
+.big{font-size:56px;font-weight:800;line-height:1}
+.big small{display:block;font-size:17px;font-weight:500;color:var(--dim);margin-top:6px}
+.ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:17px}
+.right{flex:1.1;min-width:320px}
+svg{width:100%;height:auto;display:block}
+.say{width:min(1100px,100%);min-height:110px;margin-top:18px;font-size:26px;line-height:1.35;font-weight:600}
+.say small{display:block;font-size:18px;color:var(--dim);font-weight:400;margin-top:8px}
+.nav{display:flex;gap:12px;align-items:center;margin-top:14px;width:min(1100px,100%)}
+button{font:600 18px -apple-system,"Helvetica Neue",Arial,sans-serif;padding:12px 22px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer}
+button.go{background:var(--ink);color:#fff;border-color:var(--ink)}
+button:disabled{opacity:.35;cursor:default}
+.count{margin-left:auto;color:var(--dim);font-size:16px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<h1>Rolling the dice</h1>
+<div class="sub">Does the plan survive bad luck? Click Next, or use the arrow keys.</div>
+<div class="stage">
+  <div class="left">
+    <div class="race" id="race"></div>
+    <div class="dice" id="dice"></div>
+    <div id="score" class="big" hidden></div>
+    <div class="ctl" id="ctl" hidden>
+      <button id="play" class="go">Replay the day 1,000 times</button>
+    </div>
+    <div class="ctl" id="extra" hidden>
+      <label><input type="checkbox" id="bd"> Add a surprise: a vehicle breakdown (+30 min)</label>
+      <label>chance <input type="range" id="bdp" min="0" max="40" step="5" value="10"> <b id="bdv">10 %</b></label>
+    </div>
+  </div>
+  <div class="right"><svg viewBox="0 0 560 470" id="chart"></svg></div>
+</div>
+<div class="say" id="say"></div>
+<div class="nav"><button id="back">Back</button><button id="next" class="go">Next</button><span class="count" id="count"></span></div>
+<script>
+// real drive times from the engine (minutes to the Brienne bridge by speed factor; roads still cap the speed)
+var DRIVE = {
+  "B-1": {"0.75": 83, "0.80": 81, "0.85": 79, "0.90": 77, "0.95": 75, "1.00": 73},
+  "B-3": {"0.75": 119, "0.80": 112, "0.85": 106, "0.90": 103, "0.95": 100, "1.00": 96},
+  "R-1": {"0.80": 88, "0.85": 83, "0.90": 78, "0.95": 74, "1.00": 70, "1.05": 67, "1.10": 64, "1.15": 61}};
+var NAME = {"B-1": "the mechanised battalion", "B-3": "the armour"};
+function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function q(x) { return (Math.round(x / 0.05) * 0.05).toFixed(2); }
+function roll(r, unit, bd) {
+  var delay = Math.min(60, Math.round(-Math.log(1 - r()) * 10));
+  var fb = q(0.75 + r() * 0.25), dep = 40 + Math.floor(r() * 51) - 25, fr = q(0.8 + r() * 0.35);
+  var broke = bd && r() < bd;
+  var blue = delay + DRIVE[unit][fb] + (broke ? 30 : 0), red = dep + DRIVE["R-1"][fr];
+  return {delay: delay, fb: fb, dep: dep, fr: fr, broke: broke, blue: blue, red: red, win: blue <= red};
+}
+// chart
+var X0 = 60, Y0 = 410, W = 470, H = 370, XMIN = 40, XMAX = 200, YMIN = 30, YMAX = 160;
+function sx(v) { return X0 + (v - XMIN) / (XMAX - XMIN) * W; }
+function sy(v) { return Y0 - (v - YMIN) / (YMAX - YMIN) * H; }
+function axes() {
+  var s = "<rect x='" + X0 + "' y='" + (Y0 - H) + "' width='" + W + "' height='" + H + "' fill='#fbfaf6' stroke='#e2dccf'/>";
+  s += "<path d='M" + sx(YMIN) + " " + sy(YMIN) + " L" + sx(Math.min(XMAX, YMAX)) + " " + sy(Math.min(XMAX, YMAX)) + "' stroke='#999' stroke-dasharray='6 6'/>";
+  for (var v = 50; v <= 200; v += 25) s += "<text x='" + sx(v) + "' y='" + (Y0 + 22) + "' font-size='13' text-anchor='middle' fill='#888'>" + v + "</text>";
+  for (var w = 40; w <= 160; w += 20) s += "<text x='" + (X0 - 8) + "' y='" + (sy(w) + 4) + "' font-size='13' text-anchor='end' fill='#888'>" + w + "</text>";
+  s += "<text x='" + (X0 + W / 2) + "' y='" + (Y0 + 48) + "' font-size='15' text-anchor='middle' fill='#555'>minute Blue reaches the bridge</text>";
+  s += "<text transform='translate(18," + (Y0 - H / 2) + ") rotate(-90)' font-size='15' text-anchor='middle' fill='#555'>minute Red reaches the bridge</text>";
+  s += "<text x='" + (X0 + 14) + "' y='" + (Y0 - H + 26) + "' font-size='16' font-weight='700' fill='#1a9b62'>above the line: Blue first</text>";
+  s += "<text x='" + (X0 + W - 14) + "' y='" + (Y0 - 14) + "' font-size='16' font-weight='700' fill='#d64545' text-anchor='end'>below: Red first</text>";
+  return s;
+}
+var chart = document.getElementById("chart"), dots = [];
+function drawDots(list, big) {
+  chart.innerHTML = axes() + list.map(function (d) {
+    return "<circle cx='" + sx(Math.min(d.blue, XMAX)) + "' cy='" + sy(Math.max(YMIN, Math.min(d.red, YMAX))) + "' r='" + (big ? 9 : 3.6) + "' fill='" + (d.win ? "#1a9b62" : "#d64545") + "' opacity='" + (big ? 1 : .55) + "'/>";
+  }).join("");
+}
+function race(blue, red, unit) {
+  var m = 200, b = "<div class='lane'><span style='color:var(--blue)'>Blue</span><div class='bar' style='width:" + (blue / m * 100) + "%;background:var(--blue)'></div><em>min " + blue + "</em></div>";
+  b += "<div class='lane'><span style='color:var(--red)'>Red</span><div class='bar' style='width:" + (red / m * 100) + "%;background:var(--red)'></div><em>min " + red + "</em></div>";
+  b += "<div class='verdict' style='color:" + (blue <= red ? "var(--ok)" : "var(--red)") + "'>" + (blue <= red ? "Blue first by " + (red - blue) + " min: bridge held" : "Red first by " + (blue - red) + " min: bridge lost") + "</div>";
+  return "<div style='color:var(--dim);font-size:16px'>The race to the Brienne bridge (" + NAME[unit] + ")</div>" + b;
+}
+function dice(d) {
+  if (!d) return "";
+  return [["Blue leaves late", d.delay + " min"], ["Blue's speed", Math.round(d.fb * 100) + " %"], ["Red leaves at", "min " + d.dep], ["Red's speed", Math.round(d.fr * 100) + " %"]]
+    .map(function (x) { return "<div class='die hot'>" + x[0] + "<b>" + x[1] + "</b></div>"; }).join("") + (d.broke ? "<div class='die hot' style='grid-column:span 2;border-color:var(--red)'>Breakdown!<b>+30 min</b></div>" : "");
+}
+var EX1 = {delay: 6, fb: "0.90", dep: 47, fr: "0.95", broke: false}, EX2 = {delay: 45, fb: "0.85", dep: 25, fr: "1.00", broke: false};
+function fill(d, u) { d.blue = d.delay + DRIVE[u][d.fb]; d.red = d.dep + DRIVE["R-1"][d.fr]; d.win = d.blue <= d.red; return d; }
+var unit = "B-1";
+function runMany(u, bdOn) {
+  var r = rng(7), out = [], bd = bdOn ? (+document.getElementById("bdp").value) / 100 : 0;
+  for (var k = 0; k < 1000; k++) out.push(roll(r, u, bd));
+  return out;
+}
+var anim = null;
+function play(u, bdOn, instant) {
+  if (anim) cancelAnimationFrame(anim);
+  var all = runMany(u, bdOn), n = 0, sc = document.getElementById("score");
+  sc.hidden = false;
+  function step() {
+    n = instant ? 1000 : Math.min(1000, n + 25);
+    var shown = all.slice(0, n), w = shown.filter(function (d) { return d.win; }).length;
+    drawDots(shown, false);
+    sc.innerHTML = Math.round(1000 * w / n) / 10 + " %<small>bridge held in " + w + " of " + n + " replays</small>";
+    if (n < 1000) anim = requestAnimationFrame(step);
+  }
+  step();
+}
+var STEPS = [
+  {unit: "B-1", show: "perfect", t: "The plan on a perfect day: our battalion reaches the bridge at minute 73. Red arrives at minute 110.",
+   s: "We win the race by 37 minutes. But real days are never perfect."},
+  {unit: "B-1", show: "dice", t: "So we list the things that can go wrong, and give each one a die.",
+   s: "Blue might leave late (usually a few minutes, sometimes an hour). Blue might drive slower (75 to 100 % speed). Red might leave earlier or later (25 min either way). Red might drive faster or slower (80 to 115 %)."},
+  {unit: "B-1", show: "ex1", t: "Replay 1: roll all four dice. That's one possible day.",
+   s: "Blue left 6 min late and drove at 90 %. Red left at minute 47. Blue still arrives first: green dot."},
+  {unit: "B-1", show: "ex2", t: "Replay 2: roll again. This time Blue left 45 minutes late, and Red left early.",
+   s: "Red gets there first: red dot. Each dot on the chart is one replay of the day."},
+  {unit: "B-1", show: "run", t: "Now let the computer replay the day 1,000 times, and count.",
+   s: "Press the button. Every dot is a different day. The percentage is just green dots divided by all dots."},
+  {unit: "B-3", show: "run", t: "The other plan: send the armour instead. On a perfect day it arrives at minute 96, still before Red (110).",
+   s: "It wins a perfect day too, but only by 14 minutes. Press the button and watch what bad luck does to it."},
+  {unit: "B-1", show: "extra", t: "Want a new surprise? Add a die for it. Here: a chance that a vehicle breaks down and costs 30 minutes.",
+   s: "Tick it and move the chance: the percentage updates instantly. Every surprise is just two numbers: how likely it is, and how bad it is."},
+  {unit: "B-1", show: "end", t: "That's Monte Carlo: roll the dice for every risk you know, replay many days, count how often the plan works.",
+   s: "It doesn't predict the future. It tells you how fragile a plan is, and which risk breaks it. Margin (37 minutes vs 14) is what makes a plan robust."}
+];
+var i = 0;
+function render() {
+  var s = STEPS[i]; unit = s.unit;
+  if (anim) cancelAnimationFrame(anim);
+  var perfect = fill({delay: 0, fb: "1.00", dep: 40, fr: "1.00"}, unit);
+  document.getElementById("race").innerHTML = race(perfect.blue, perfect.red, unit);
+  document.getElementById("dice").innerHTML = "";
+  document.getElementById("score").hidden = true;
+  document.getElementById("ctl").hidden = !(s.show === "run" || s.show === "extra");
+  document.getElementById("extra").hidden = s.show !== "extra";
+  drawDots([], false);
+  if (s.show === "dice") document.getElementById("dice").innerHTML = ["Blue leaves late", "Blue's speed", "Red leaves at", "Red's speed"].map(function (x) { return "<div class='die'>" + x + "<b>?</b></div>"; }).join("");
+  if (s.show === "ex1" || s.show === "ex2") {
+    var d1 = fill(Object.assign({}, EX1), unit), d2 = fill(Object.assign({}, EX2), unit), d = s.show === "ex1" ? d1 : d2;
+    document.getElementById("race").innerHTML = race(d.blue, d.red, unit);
+    document.getElementById("dice").innerHTML = dice(d);
+    drawDots(s.show === "ex1" ? [d1] : [d1, d2], true);
+  }
+  if (s.show === "end") play("B-1", false, true);
+  document.getElementById("say").innerHTML = s.t + "<small>" + s.s + "</small>";
+  document.getElementById("count").textContent = (i + 1) + " of " + STEPS.length;
+  document.getElementById("back").disabled = i === 0;
+  document.getElementById("next").disabled = i === STEPS.length - 1;
+}
+document.getElementById("play").onclick = function () { play(unit, document.getElementById("bd").checked && !document.getElementById("extra").hidden, false); };
+document.getElementById("bdp").oninput = function () { document.getElementById("bdv").textContent = this.value + " %"; if (document.getElementById("bd").checked) play(unit, true, true); };
+document.getElementById("bd").onchange = function () { play(unit, this.checked, true); };
+document.getElementById("next").onclick = function () { if (i < STEPS.length - 1) { i++; render(); } };
+document.getElementById("back").onclick = function () { if (i > 0) { i--; render(); } };
+window.addEventListener("keydown", function (e) { if (e.key === "ArrowRight") document.getElementById("next").onclick(); if (e.key === "ArrowLeft") document.getElementById("back").onclick(); });
+render();
+</script>
+</body>
+</html>

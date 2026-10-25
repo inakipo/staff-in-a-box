@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Same Group or Not</title>
+<style>
+:root{--bg:#f6f3ec;--ink:#1d232c;--dim:#6b7280;--line:#d8d2c4;--msg:#e0a100;--grp:#2563eb;--bad:#d64545;--ok:#1a9b62;--card:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px}
+h1{font-size:30px;letter-spacing:-.01em;margin-bottom:6px}
+.sub{color:var(--dim);font-size:17px;margin-bottom:18px}
+.stage{width:min(1000px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+svg{display:block;width:100%;height:auto}
+.say{width:min(1000px,100%);min-height:110px;margin-top:18px;font-size:26px;line-height:1.35;font-weight:600}
+.say small{display:block;font-size:18px;color:var(--dim);font-weight:400;margin-top:8px}
+.nav{display:flex;gap:12px;align-items:center;margin-top:14px;width:min(1000px,100%)}
+button{font:600 18px inherit;font-family:inherit;padding:12px 22px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer}
+button.go{background:var(--ink);color:#fff;border-color:var(--ink)}
+button:disabled{opacity:.35;cursor:default}
+.count{margin-left:auto;color:var(--dim);font-size:16px}
+.f{transition:opacity .5s, transform .6s}
+.hide{opacity:0}
+text{font-family:-apple-system,"Helvetica Neue",Arial,sans-serif}
+</style>
+</head>
+<body>
+<h1>Same group or not?</h1>
+<div class="sub">How the computer puts soldiers' messages together. Click Next, or use the arrow keys.</div>
+
+<div class="stage">
+<svg viewBox="0 0 1000 560" id="map">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#eee8dc" stroke-width="1"/></pattern>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2563eb"/></marker>
+    <marker id="arrRed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#d64545"/></marker>
+  </defs>
+  <rect width="1000" height="560" fill="url(#grid)"/>
+  <!-- a road and a river, just for orientation -->
+  <path d="M330 0 C 360 140, 400 260, 380 560" stroke="#d6cdb8" stroke-width="14" fill="none" stroke-linecap="round"/>
+  <path d="M0 470 C 250 440, 520 500, 1000 455" stroke="#9cc3e6" stroke-width="16" fill="none"/>
+  <text x="18" y="500" font-size="16" fill="#5d8db8">river</text>
+  <text x="395" y="40" font-size="16" fill="#a79f8b">road</text>
+  <!-- scale -->
+  <g transform="translate(820,520)"><path d="M0 0H80" stroke="#888" stroke-width="3"/><text x="0" y="-8" font-size="15" fill="#777">2 km</text></g>
+  <text x="960" y="40" font-size="20" fill="#999" text-anchor="middle">N</text><path d="M960 48 L960 80" stroke="#999" stroke-width="2" marker-start="url(#arr)"/>
+
+  <!-- step elements -->
+  <g id="msgA" class="f hide"><circle cx="360" cy="120" r="11" fill="var(--msg)" stroke="#7a5800" stroke-width="2"/>
+    <rect x="220" y="62" width="128" height="34" rx="8" fill="#fff8e1" stroke="#e0a100"/><text x="284" y="85" font-size="17" text-anchor="middle">06:40, 10 veh.</text></g>
+
+  <g id="track1" class="f hide"><circle id="ring1" cx="360" cy="120" r="30" fill="none" stroke="var(--grp)" stroke-width="4" stroke-dasharray="9 7"/>
+    <text id="ring1lab" x="400" y="113" font-size="19" fill="var(--grp)" font-weight="700">Group 1 (maybe)</text></g>
+
+  <g id="msgB" class="f hide"><circle cx="378" cy="250" r="11" fill="var(--msg)" stroke="#7a5800" stroke-width="2"/>
+    <rect x="410" y="252" width="128" height="34" rx="8" fill="#fff8e1" stroke="#e0a100"/><text x="474" y="275" font-size="17" text-anchor="middle">06:55, 14 veh.</text></g>
+
+  <g id="pred" class="f hide"><path d="M360 150 L368 226" stroke="var(--grp)" stroke-width="3" stroke-dasharray="6 6" marker-end="url(#arr)"/>
+    <circle cx="370" cy="240" r="9" fill="none" stroke="var(--grp)" stroke-width="3"/>
+    <text x="150" y="200" font-size="17" fill="var(--grp)">where Group 1</text><text x="150" y="222" font-size="17" fill="var(--grp)">should be by 06:55</text></g>
+
+  <g id="gate" class="f hide"><circle cx="370" cy="240" r="100" fill="rgba(37,99,235,.08)" stroke="var(--grp)" stroke-width="2" stroke-dasharray="4 5"/>
+    <text x="170" y="330" font-size="17" fill="var(--grp)">the circle: "it can't</text><text x="170" y="352" font-size="17" fill="var(--grp)">be further than this"</text></g>
+
+  <g id="join" class="f hide"><path d="M378 250 L360 120" stroke="var(--ok)" stroke-width="3"/>
+    <text x="555" y="228" font-size="20" fill="var(--ok)" font-weight="700">inside the circle:</text><text x="555" y="252" font-size="20" fill="var(--ok)" font-weight="700">same group</text></g>
+
+  <g id="track1b" class="f hide"><circle cx="374" cy="245" r="30" fill="none" stroke="var(--grp)" stroke-width="5"/>
+    <text x="300" y="300" font-size="19" fill="var(--grp)" font-weight="700" text-anchor="end">Group 1 (confirmed: 2 messages)</text></g>
+
+  <g id="msgC" class="f hide"><circle cx="860" cy="170" r="11" fill="var(--msg)" stroke="#7a5800" stroke-width="2"/>
+    <rect x="796" y="112" width="128" height="34" rx="8" fill="#fff8e1" stroke="#e0a100"/><text x="860" y="135" font-size="17" text-anchor="middle">06:50, 5 veh.</text></g>
+
+  <g id="tooFar" class="f hide"><path d="M372 130 L846 168" stroke="var(--bad)" stroke-width="3" stroke-dasharray="8 6" marker-end="url(#arrRed)"/>
+    <text x="610" y="128" font-size="19" fill="var(--bad)" font-weight="700" text-anchor="middle">12 km in 10 minutes = 72 km/h</text>
+    <text x="610" y="210" font-size="19" fill="var(--bad)" font-weight="700" text-anchor="middle">a group of trucks can't go that fast: NOT Group 1</text></g>
+
+  <g id="track2" class="f hide"><circle id="ring2" cx="860" cy="170" r="30" fill="none" stroke="#7c3aed" stroke-width="4" stroke-dasharray="9 7"/>
+    <text x="860" y="230" font-size="19" fill="#7c3aed" font-weight="700" text-anchor="middle">Group 2 (maybe)</text></g>
+</svg>
+</div>
+
+<div class="say" id="say"></div>
+<div class="nav"><button id="back">Back</button><button id="next" class="go">Next</button><span class="count" id="count"></span></div>
+
+<script>
+var STEPS = [
+  {show: [], t: "Soldiers send short radio messages: what they saw, where, and when. The computer's job: work out which messages are about the same group of vehicles.", s: "That's all \"fusion\" means: putting messages together into groups."},
+  {show: ["msgA"], t: "06:40. A soldier radios: \"about 10 vehicles here\".", s: "The yellow dot is where the soldier says they are."},
+  {show: ["msgA", "track1"], t: "The computer writes a note: \"maybe a group here\".", s: "This note is called a track. Dashed = only one message so far, so it's just a maybe."},
+  {show: ["msgA", "track1", "msgB"], t: "06:55. Another message: \"14 vehicles\", a bit further south. Same group, or a different one?", s: "The counts don't match (10 vs 14), positions are never exact. The computer can't just compare the words."},
+  {show: ["msgA", "track1", "msgB", "pred"], t: "Question 1: where should Group 1 be by now?", s: "It looked like it was driving south along the road. 15 minutes later it should be about here (blue arrow)."},
+  {show: ["msgA", "track1", "msgB", "pred", "gate"], t: "Question 2: draw a circle around that guess.", s: "Messages are a bit off and groups change speed, so we allow some room: about 2.5 km, more if nobody has reported for a while (never more than 5 km)."},
+  {show: ["msgA", "track1", "msgB", "pred", "gate", "join"], t: "The new message is inside the circle. So: same group.", s: "No understanding needed: just distance, time and speed."},
+  {show: ["msgA", "msgB", "track1b"], t: "Group 1 moves to the newest position and becomes solid: 2 messages agree, so it's confirmed.", s: "It now says \"10 to 14 vehicles\": the computer keeps the range, it doesn't pretend to know the exact number."},
+  {show: ["msgA", "msgB", "track1b", "msgC"], t: "06:50. A third message: \"5 vehicles\", far to the east.", s: "Could Group 1 have got there?"},
+  {show: ["msgA", "msgB", "track1b", "msgC", "tooFar"], t: "It would have to drive 12 km in 10 minutes. Impossible for a group of trucks.", s: "So this message cannot be Group 1, even before checking any circle."},
+  {show: ["msgA", "msgB", "track1b", "msgC", "track2"], t: "So the computer starts a new note: \"Group 2, maybe\".", s: "If a second message comes in near it, Group 2 gets confirmed. If nobody ever reports it again, it fades away: that's how false messages disappear."},
+  {show: ["msgA", "msgB", "track1b"], t: "That's it. Each new message: predict where each group should be, check the circle, check the speed. Close enough = same group. Nothing fits = new maybe-group.", s: "In our exercise: 43 messages became exactly 2 confirmed groups, one per enemy unit that was seen."}
+];
+var i = 0, ALL = ["msgA", "track1", "msgB", "pred", "gate", "join", "track1b", "msgC", "tooFar", "track2"];
+function render() {
+  var st = STEPS[i];
+  ALL.forEach(function (id) { document.getElementById(id).classList.toggle("hide", st.show.indexOf(id) < 0); });
+  if (i === 11) document.getElementById("track2").classList.add("hide");
+  document.getElementById("say").innerHTML = st.t + "<small>" + st.s + "</small>";
+  document.getElementById("count").textContent = (i + 1) + " of " + STEPS.length;
+  document.getElementById("back").disabled = i === 0;
+  document.getElementById("next").disabled = i === STEPS.length - 1;
+}
+document.getElementById("next").onclick = function () { if (i < STEPS.length - 1) { i++; render(); } };
+document.getElementById("back").onclick = function () { if (i > 0) { i--; render(); } };
+window.addEventListener("keydown", function (e) {
+  if (e.key === "ArrowRight") document.getElementById("next").onclick();
+  if (e.key === "ArrowLeft") document.getElementById("back").onclick();
+});
+render();
+</script>
+</body>
+</html>

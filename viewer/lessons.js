@@ -81,7 +81,7 @@ window.LESSONS = [
   },
   {
     id: "hole", title: "The hole in the plan", show: { layers: ["terrain", "roads", "rivers", "crossings", "places", "units", "routes"], panel: "mission", anim: "play-truth", camera: "brienne" },
-    plain: "The mission says: stop Red crossing at X5 and X6. The first plan only covered X5. Red's recce company drives straight to X6 and crosses at H+{{mission.recce_x6}}, unseen and unopposed. Can any Blue unit get there first? The fastest is our own recce, 2 minutes ahead, and recce is not allowed to hold ground.",
+    plain: "The mission says: stop Red crossing at X5 and X6. The first plan only covered X5. Red's recce company drives straight to X6 and crosses at H+{{mission.recce_x6}}, unseen and unopposed. Can any Blue unit get there first? Only our own recce, 2 minutes ahead, and recce is not allowed to hold ground. But arriving first is not the only way: a battalion that arrives late can still attack the 6-vehicle recce company and win (orange bars).",
     why: "A real staff must catch this in mission analysis and go back to the commander. Here the engine caught it. The first verdict was 'infeasible, short by 17 minutes', but that came from a bug: the solver and the validator each had their own copy of the race rule, and the copies had drifted apart.",
     tech: "The way out uses the engineers, who sat idle at the camp in the first plan: they can deny a bridge by demolition, if its charges are ready (arrival + 20 min) before Red arrives. Fix for the bug: one function, race_ok(), used by both. A 40-vehicle battalion arriving 17 minutes after a 6-vehicle recce company still clears the bridge by attacking at 6.7:1 (needs 2:1). With one shared rule the solver finds a plan with no head start."
   },

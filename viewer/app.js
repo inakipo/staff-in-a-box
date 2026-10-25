@@ -832,20 +832,33 @@
     });
     h += '</div>';
     // reach X6 bar chart
-    var R = M.reach_x6.slice().sort(function (a, b) { return a.min - b.min; }), red = M.red_recce_x6_arrive, maxM = 160;
-    var W = 640, left = 70, right = 16, top = 26, rowH = 26, H = top + R.length * rowH + 30, X = function (m) { return left + (W - left - right) * m / maxM; };
-    var sv = '<svg viewBox="0 0 ' + W + ' ' + H + '" font-family="Inter, sans-serif">';
-    sv += '<text x="0" y="14" fill="#edf1f6" font-size="13.5" font-weight="700">Minutes for each Blue unit to reach X6</text>';
-    [0, 30, 60, 90, 120, 150].forEach(function (m) { sv += '<line x1="' + X(m) + '" x2="' + X(m) + '" y1="' + (top - 2) + '" y2="' + (H - 24) + '" stroke="#243040"/><text x="' + X(m) + '" y="' + (H - 9) + '" fill="#8d9bab" font-size="11" text-anchor="middle">' + m + '</text>'; });
+    var R = M.reach_x6.slice().sort(function (a, b) { return a.min - b.min; }), red = M.red_recce_x6_arrive, maxM = 210;
+    var W = 640, left = 70, right = 16, top = 46, rowH = 26, H = top + R.length * rowH + 30, X = function (m) { return left + (W - left - right) * m / maxM; };
+    var sv = '<svg viewBox="0 0 ' + W + ' ' + (H + 16) + '" font-family="Inter, sans-serif">';
+    sv += '<text x="0" y="14" fill="#edf1f6" font-size="13.5" font-weight="700">Who could deny X6? (arrive first, or arrive late and win the attack)</text>';
+    H += 16;
+    [0, 30, 60, 90, 120, 150, 180].forEach(function (m) { sv += '<line x1="' + X(m) + '" x2="' + X(m) + '" y1="' + (top - 2) + '" y2="' + (H - 40) + '" stroke="#243040"/><text x="' + X(m) + '" y="' + (H - 25) + '" fill="#8d9bab" font-size="11" text-anchor="middle">' + m + '</text>'; });
+    // outcome under the shared race rule: arrive first and hold, OR arrive late and win the attack (2:1), engineers must be rigged first
+    var redVeh = (S.units['R-REC'] || {}).vehicles || 6;
+    function verdict(r) {
+      var u = S.units[r.unit] || {}, late = r.min - red, ratio = (u.vehicles || 0) / redVeh;
+      if (r.type === 'recon') return { c: '#6b7a8c', t: r.min + ' min: first, but recce can\'t hold' };
+      if (r.type === 'logistics') return { c: '#6b7a8c', t: r.min + ' min: logistics doesn\'t fight' };
+      if (r.type === 'engineer') return { c: '#ff7a59', t: r.min + ' + 20 to rig: too late' };
+      if (late <= 0) return { c: '#4ade80', t: r.min + ' min, there first: holds' };
+      return ratio >= 2 ? { c: '#f5b25b', t: r.min + ' min: late, wins ' + u.vehicles + ' vs ' + redVeh }
+                        : { c: '#ff7a59', t: r.min + ' min: late, too weak' };
+    }
     R.forEach(function (r, i) {
-      var y = top + i * rowH, early = r.min < red, recon = r.type === 'recon';
-      var col = early ? '#6b7a8c' : '#ff7a59';
+      var y = top + i * rowH, v = verdict(r);
       sv += '<text x="0" y="' + (y + 16) + '" fill="#c9d3de" font-size="12.5" font-weight="700">' + r.unit + '</text>';
-      sv += '<rect x="' + X(0) + '" y="' + (y + 5) + '" width="' + (X(r.min) - X(0)) + '" height="15" rx="3" fill="' + col + '"/>';
-      sv += '<text x="' + (X(r.min) + 6) + '" y="' + (y + 16) + '" fill="#edf1f6" font-size="11.5">' + r.min + ' min' + (recon && early ? ', recce: may not hold ground' : (early ? '' : ', too late by ' + (r.min - red))) + '</text>';
+      sv += '<rect x="' + X(0) + '" y="' + (y + 5) + '" width="' + (X(r.min) - X(0)) + '" height="15" rx="3" fill="' + v.c + '"/>';
+      var tx = X(r.min) + 6, anchor = 'start';
+      sv += '<text x="' + tx + '" y="' + (y + 16) + '" fill="#edf1f6" font-size="11.5" text-anchor="' + anchor + '" paint-order="stroke" stroke="#141b24" stroke-width="3">' + v.t + '</text>';
     });
-    sv += '<line x1="' + X(red) + '" x2="' + X(red) + '" y1="' + (top - 8) + '" y2="' + (H - 24) + '" stroke="#ff4d4d" stroke-width="2"/>';
+    sv += '<line x1="' + X(red) + '" x2="' + X(red) + '" y1="' + (top - 8) + '" y2="' + (H - 40) + '" stroke="#ff4d4d" stroke-width="2"/>';
     sv += '<text x="' + (X(red) + 5) + '" y="' + (top - 10) + '" fill="#ff8a8a" font-size="11.5" font-weight="700">Red recce crosses H+' + red + '</text>';
+    sv += '<text x="0" y="' + (H - 9) + '" fill="#8d9bab" font-size="10.5">grey: can\'t do the job;  orange: late, but wins the attack (needs 2:1);  red: can\'t deny it</text>';
     sv += '</svg>';
     h += '<div class="whyv" style="margin-top:12px"><div class="card">' + sv + '</div>';
     var d = M.drifted_rule;

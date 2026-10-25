@@ -1,9 +1,10 @@
 # Staff in a box
 
 A small command post for one fictional brigade exercise on real terrain (the Aube valley, France). It takes in noisy
-radio reports, builds a picture of the enemy, assigns units to tasks, checks the plan against the mission, and measures
+radio messages, reads them with a small local model, builds a picture of the enemy, assigns units to tasks, checks the plan against the mission, and measures
 how the plan survives bad luck. Every decision comes from a deterministic method (graph search, filtering, constraint
-programming, seeded simulation), with no language model involved. Each one can be traced to a rule or a number.
+programming, seeded simulation). The only language model reads the radio text; it never decides. Each decision can be
+traced to a rule or a number.
 
 ![Dijkstra's search spreading from the assembly area](docs/img/ripple.jpg)
 
@@ -11,6 +12,7 @@ programming, seeded simulation), with no language model involved. Each one can b
 
 | Question | Method | Result on the scenario |
 |---|---|---|
+| What do the radio messages say? | A 4B model running locally reads each message into fields; code turns references into positions and checks every field against the text | Fine-tuned model + guard: 89 % of messages fully right on the generator's style, 79 % on messages rewritten by another model. See `docs/reading-log.md` |
 | How fast can we get there? | Dijkstra on the OpenStreetMap road graph (54,077 points), per-unit speed caps, bridges that can be cut | Camp de Mailly to the Arcis bridges: 42.8 min. Blow both town bridges: 64.2 min via the D65 upstream |
 | Where is the enemy? | Report fusion: prediction, gating (distance and plausible speed), alpha-beta filter, coasting, re-identification, track merging | 43 noisy reports (4 of them ghosts) become exactly 2 confirmed tracks, one per Red unit seen |
 | Who should go where? | OR-Tools CP-SAT: one task per unit, eligibility rules, fuel reserve; minimise the latest ready time | OPTIMAL in about 20 ms. The slowest unit (armour) takes the nearest bridge |

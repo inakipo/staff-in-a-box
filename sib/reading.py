@@ -114,6 +114,16 @@ def fusion_scores(truth, ss, ext, at=300):
     return res
 
 
+def score_rw(name):
+    """Out-of-template rewrites: field accuracy only (80 of 138 messages kept, so no full streams for fusion)."""
+    msgs = json.load((D / "eval_rw.json").open())
+    ext = {json.loads(l)["id"]: json.loads(l)["parsed"] for l in (D / f"eval_rw.{name}.jsonl").open()}
+    out = {"reader": name, "set": "rewritten", "fields": field_scores(msgs, ext)}
+    (D / f"score_rw.{name}.json").write_text(json.dumps(out, indent=1))
+    print(json.dumps(out, indent=1))
+    return out
+
+
 def score(name):
     msgs = json.load((D / "eval.json").open())
     ext = {}
@@ -130,4 +140,4 @@ def score(name):
 
 
 if __name__ == "__main__":
-    {"make-eval": lambda: make_eval(), "score": lambda: score(sys.argv[2])}[sys.argv[1]]()
+    {"make-eval": lambda: make_eval(), "score": lambda: score(sys.argv[2]), "score-rw": lambda: score_rw(sys.argv[2])}[sys.argv[1]]()

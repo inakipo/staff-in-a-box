@@ -8,7 +8,7 @@ traced to a rule or a number.
 
 ![Dijkstra's search spreading from the assembly area](docs/img/ripple.jpg)
 
-## Five questions, five methods
+## Six questions, six methods
 
 | Question | Method | Result on the scenario |
 |---|---|---|
